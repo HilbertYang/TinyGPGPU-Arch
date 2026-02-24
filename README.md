@@ -1,0 +1,68 @@
+# G-Accelerator: A PTX-Compatible GPGPU & AI Accelerator
+
+A custom, standalone GPGPU processor designed for accelerating **Artificial Neural Networks (ANN)** and High-Performance Computing (HPC) tasks. This project features a full hardware-software stack, including a custom SIMD architecture and a compilation pipeline that translates NVIDIA CUDA PTX into custom machine code.
+
+## 🚀 Key Features
+
+- **PTX-Compatible Toolchain**: Supports a seamless flow from standard CUDA C++ (__global__ kernels) to hardware execution via a custom Python-based assembly translator.
+- **BFloat16 SIMD Engine**: Native hardware support for **Google’s BFloat16** floating-point format, providing the optimal balance between range and hardware resource efficiency for AI inference.
+- **Tensor Acceleration Unit**: A dedicated module for AI-specific workloads, supporting **Fused Multiply-Accumulate (FMA)** and **ReLU** activation functions directly in the datapath.
+- **64-bit Packed Vector Architecture**: Every 64-bit register functions as a packed vector (e.g., 4 x 16-bit elements), enabling 4-way parallel execution per clock cycle.
+- **Decoupled Memory Interface**: Independent instruction and data memory (BRAM-based) with a dedicated Load/Store unit for 64-bit wide memory access.
+
+---
+
+## 🏗️ Architecture Overview
+
+The core is designed with a classic Fetch-Decode-Execute-Writeback pipeline, optimized for the **NetFPGA** platform where hardware resources are at a premium.
+
+### Hardware Components:
+* **Control Unit**: Manages the single-stream execution flow and PC (Program Counter) logic.
+* **Vector Register File**: High-bandwidth access to 64-bit wide registers.
+* **Execution Unit (EU)**: Handles standard arithmetic, logic, and branching operations.
+* **Tensor Unit**: Specialized for dot products and matrix-vector operations.
+* **Thread Mapping**: Implements a deterministic mapping of the CUDA threadIdx.x concept onto the SIMD lanes of the architecture.
+
+---
+
+## 🛠️ Compiler Pipeline
+
+This project bridges the gap between high-level CUDA programming and custom RTL design.
+
+1.  **Source**: Write kernels in `kernel.cu` using standard CUDA syntax.
+2.  **Compile**: Use NVIDIA `nvcc` to generate PTX (Parallel Thread Execution) assembly.
+3.  **Translate**: A custom Python parser maps PTX instructions (e.g., `add.s16`, `fma.rn.bf16`) to the internal ISA Opcodes.
+4.  **Execute**: The generated `.hex` file is loaded into the FPGA's Instruction Memory for execution.
+
+Workflow:
+kernel.cu --> nvcc (-ptx) --> kernel.ptx --> Python Translator --> gpu_program.hex
+
+---
+
+## 📈 Supported Operations
+
+| Operation | Type | Hardware Implementation |
+| :--- | :--- | :--- |
+| **Vector Add/Sub** | int16_t | 4-way Parallel SIMD |
+| **Vector Multiply** | BFloat16 | Multi-cycle Pipeline |
+| **FMA (MAC)** | BFloat16 | Tensor Unit (Fused) |
+| **ReLU** | Mixed | Integrated Activation Logic |
+| **LD/ST** | 64-bit | Packed Memory Access |
+
+---
+
+## 📁 Project Structure
+
+* `/rtl`: SystemVerilog/Verilog source code for the GPGPU core.
+* `/compiler`: Python scripts for PTX parsing and Opcode generation.
+* `/kernels`: Sample CUDA kernels for testing (Vector Addition, ReLU, etc.).
+* `/sim`: Python-based cycle-accurate simulator and Testbenches.
+* `/docs`: Architecture diagrams and ISA specification.
+
+---
+
+## 🎯 Design Philosophy (Interview Notes)
+
+In this design, I chose **SIMD over SIMT** to maximize throughput on resource-constrained FPGA fabric. By treating 64-bit registers as packed vectors, the architecture achieves massive parallelism without the overhead of complex thread-masking hardware. The inclusion of **BFloat16** reflects modern industry trends (like Google TPUs and NVIDIA H100s), prioritizing dynamic range over precision for neural network stability.
+
+---
