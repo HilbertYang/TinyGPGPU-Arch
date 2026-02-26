@@ -3,6 +3,11 @@
 // Stores up to 8 × 64-bit parameters loaded before kernel launch
 // Maps to PTX: ld.param.u64 %rd1, [kernel_param_0]
 //              ld.param.u32 %r2,  [kernel_param_3]
+//
+// Internal forwarding:
+//   If the read address matches the write address in the same cycle
+//   and wr_en is asserted, wr_data is forwarded directly to rd_data
+//   without waiting for the register array to be updated.
 
 module param_regs(
     input  wire        clk,
@@ -18,6 +23,9 @@ module param_regs(
 
     reg [63:0] params [0:7];
 
+    // Forwarding: same-cycle write to same address
+    wire fwd = wr_en && (wr_addr == rd_addr);
+
     integer i;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -28,6 +36,6 @@ module param_regs(
         end
     end
 
-    assign rd_data = params[rd_addr];
+    assign rd_data = fwd ? wr_data : params[rd_addr];
 
 endmodule
