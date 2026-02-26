@@ -1,158 +1,218 @@
-// tb_pe_bf16_comb.v  — Testbench for BFloat16 Processing Element
+// pe_bf16_comb_tb.v
+// Testbench for pe_bf16_comb (and sub-modules bf16_mul, bf16_add)
 //
-// BF16 format: 1b sign | 8b exp (bias 127) | 7b mantissa
-//   1.0  = 16'h3F80    (0 01111111 0000000)
-//   2.0  = 16'h4000    (0 10000000 0000000)
-//   0.5  = 16'h3F00    (0 01111110 0000000)
-//  -1.0  = 16'hBF80    (1 01111111 0000000)
-//   3.0  = 16'h4040    (0 10000000 1000000)
-//   4.0  = 16'h4080    (0 10000001 0000000)
-//   0.0  = 16'h0000
-//  -0.0  = 16'h8000
-`timescale 1ns/1ps
-module tb_pe_bf16_comb;
+// BFloat16 format: [15]=sign, [14:7]=exponent(biased-127), [6:0]=fraction
+// Helper: bf16(sign, exp, frac)
+//
+// Test cases:
+//  1. MUL: 1.0 * 1.0 = 1.0
+//  2. MUL: 2.0 * 3.0 = 6.0
+//  3. MUL: -1.5 * 2.0 = -3.0
+//  4. MUL: 0.0 * 5.0 = 0.0
+//  5. MAC: 1.0 + 2.0*3.0 = 7.0   (C=1.0, A=2.0, B=3.0)
+//  6. MAC: 0.5 + 0.5*0.5 = 0.75  (C=0.5, A=0.5, B=0.5)
+//  7. MUL: large * large → inf clamp
+//  8. MAC: negative accumulator: -4.0 + 2.0*3.0 = 2.0
 
-    reg         valid_in, op_mac;
+`timescale 1ns/1ps
+
+module pe_bf16_comb_tb;
+
+    // ---- BF16 encoding constants ----
+    // 1.0  = 0_01111111_0000000 = 16'h3F80
+    // 2.0  = 0_10000000_0000000 = 16'h4000
+    // 3.0  = 0_10000000_1000000 = 16'h4040
+    // 6.0  = 0_10000001_1000000 = 16'h40C0
+    // -1.5 = 1_01111111_1000000 = 16'hBFC0
+    // -3.0 = 1_10000000_1000000 = 16'hC040
+    // 0.0  = 16'h0000
+    // 5.0  = 0_10000001_0100000 = 16'h40A0
+    // 7.0  = 0_10000001_1100000 = 16'h40E0
+    // 0.5  = 0_01111110_0000000 = 16'h3F00
+    // 0.75 = 0_01111110_1000000 = 16'h3F40
+    // -4.0 = 1_10000001_0000000 = 16'hC080
+    // 127.0= 0_10000101_1111110 = 16'h42FE
+    // large= 0_11111110_1111111 = 16'h7F7F  (max normal)
+    // inf  = 0_11111111_0000000 = 16'h7F80
+
+    localparam BF16_1P0  = 16'h3F80;
+    localparam BF16_2P0  = 16'h4000;
+    localparam BF16_3P0  = 16'h4040;
+    localparam BF16_6P0  = 16'h40C0;
+    localparam BF16_N1P5 = 16'hBFC0;
+    localparam BF16_N3P0 = 16'hC040;
+    localparam BF16_0P0  = 16'h0000;
+    localparam BF16_5P0  = 16'h40A0;
+    localparam BF16_7P0  = 16'h40E0;
+    localparam BF16_0P5  = 16'h3F00;
+    localparam BF16_0P75 = 16'h3F40;
+    localparam BF16_N4P0 = 16'hC080;
+    localparam BF16_MAX  = 16'h7F7F;
+    localparam BF16_INF  = 16'h7F80;
+
+    // DUT signals
+    reg         op_mac;
     reg  [15:0] A, B, C;
-    wire        valid_out;
     wire [15:0] Y;
 
-    integer pass_cnt = 0, fail_cnt = 0;
+    integer pass_cnt, fail_cnt, test_num;
 
-    pe_bf16_comb dut (
-        .valid_in(valid_in),.op_mac(op_mac),
-        .A(A),.B(B),.C(C),
-        .valid_out(valid_out),.Y(Y)
+    // Instantiate DUT
+    pe_bf16_comb DUT (
+        .op_mac (op_mac),
+        .A      (A),
+        .B      (B),
+        .C      (C),
+        .Y      (Y)
     );
 
-    // BF16 constants
-    localparam BF16_0   = 16'h0000;
-    localparam BF16_N0  = 16'h8000;
-    localparam BF16_1   = 16'h3F80;
-    localparam BF16_N1  = 16'hBF80;
-    localparam BF16_2   = 16'h4000;
-    localparam BF16_N2  = 16'hC000;
-    localparam BF16_3   = 16'h4040;
-    localparam BF16_4   = 16'h4080;
-    localparam BF16_05  = 16'h3F00;  // 0.5
-    localparam BF16_6   = 16'h40C0;
-    localparam BF16_8   = 16'h4100;
-    localparam BF16_INF = 16'h7F80;
-
-    task check_y;
-        input [15:0] expected;
-        input [255:0] label;
+    // Helper task: apply inputs, wait, check
+    task run_test;
+        input [63:0]  tnum;
+        input         mac;
+        input [15:0]  a_in, b_in, c_in;
+        input [15:0]  expected;
+        input [127:0] desc;
         begin
-            #1;
+            op_mac = mac;
+            A = a_in; B = b_in; C = c_in;
+            #10;
+            $write("Test %0d [%s]: A=%h B=%h C=%h op_mac=%b => Y=%h  expected=%h  ",
+                    tnum, desc, a_in, b_in, c_in, mac, Y, expected);
             if (Y === expected) begin
-                $display("PASS  [%-45s]  Y=%h", label, Y);
+                $display("PASS");
                 pass_cnt = pass_cnt + 1;
             end else begin
-                $display("FAIL  [%-45s]  Y=%h  exp=%h", label, Y, expected);
+                $display("FAIL *** got %h expected %h ***", Y, expected);
                 fail_cnt = fail_cnt + 1;
             end
         end
     endtask
 
-    task check_valid;
-        input exp_v;
+    // ---- Helper: check with tolerance (for cases where rounding may differ by 1 ULP) ----
+    task run_test_approx;
+        input [63:0]  tnum;
+        input         mac;
+        input [15:0]  a_in, b_in, c_in;
+        input [15:0]  expected;
+        input [127:0] desc;
+        reg [15:0] diff;
         begin
-            #1;
-            if (valid_out === exp_v) begin
-                $display("PASS  [valid_out=%b]", valid_out);
+            op_mac = mac;
+            A = a_in; B = b_in; C = c_in;
+            #10;
+            diff = (Y > expected) ? (Y - expected) : (expected - Y);
+            $write("Test %0d [%s]: A=%h B=%h C=%h op_mac=%b => Y=%h  expected=%h  ",
+                    tnum, desc, a_in, b_in, c_in, mac, Y, expected);
+            if (diff <= 1) begin
+                $display("PASS (diff=%0d ULP)", diff);
                 pass_cnt = pass_cnt + 1;
             end else begin
-                $display("FAIL  [valid_out=%b exp=%b]", valid_out, exp_v);
+                $display("FAIL *** got %h expected %h (diff=%0d ULP) ***", Y, expected, diff);
                 fail_cnt = fail_cnt + 1;
             end
         end
     endtask
 
     initial begin
-        $dumpfile("tb_pe_bf16_comb.vcd");
-        $dumpvars(0, tb_pe_bf16_comb);
-        valid_in = 1; C = BF16_0;
-
-        // =============================================
-        // op_mac = 0 : Y = A * B
-        // =============================================
-        op_mac = 0;
-
-        // 1.0 * 1.0 = 1.0
-        A = BF16_1; B = BF16_1;
-        check_y(BF16_1, "MUL 1.0*1.0=1.0");
-
-        // 2.0 * 3.0 = 6.0
-        A = BF16_2; B = BF16_3;
-        check_y(BF16_6, "MUL 2.0*3.0=6.0");
-
-        // -1.0 * 2.0 = -2.0
-        A = BF16_N1; B = BF16_2;
-        check_y(BF16_N2, "MUL -1.0*2.0=-2.0");
-
-        // -1.0 * -1.0 = 1.0
-        A = BF16_N1; B = BF16_N1;
-        check_y(BF16_1, "MUL -1*-1=1.0");
-
-        // 0.0 * anything = 0.0
-        A = BF16_0; B = BF16_4;
-        check_y(BF16_0, "MUL 0.0*4.0=0.0");
-
-        // anything * 0.0 = 0.0
-        A = BF16_3; B = BF16_0;
-        check_y(BF16_0, "MUL 3.0*0.0=0.0");
-
-        // 0.5 * 2.0 = 1.0
-        A = BF16_05; B = BF16_2;
-        check_y(BF16_1, "MUL 0.5*2.0=1.0");
-
-        // 2.0 * 4.0 = 8.0
-        A = BF16_2; B = BF16_4;
-        check_y(BF16_8, "MUL 2.0*4.0=8.0");
-
-        // =============================================
-        // op_mac = 1 : Y = C + A * B
-        // =============================================
-        op_mac = 1;
-
-        // C=0, 2.0*3.0 = 6.0
-        A = BF16_2; B = BF16_3; C = BF16_0;
-        check_y(BF16_6, "MAC 0+2*3=6.0");
-
-        // C=1.0, 1.0*1.0: 1+1=2
-        A = BF16_1; B = BF16_1; C = BF16_1;
-        check_y(BF16_2, "MAC 1.0+1*1=2.0");
-
-        // C=2.0, 2.0*3.0: 2+6=8
-        A = BF16_2; B = BF16_3; C = BF16_2;
-        check_y(BF16_8, "MAC 2.0+2*3=8.0");
-
-        // C=4.0, -1*2=-2, 4+(-2)=2
-        A = BF16_N1; B = BF16_2; C = BF16_4;
-        check_y(BF16_2, "MAC 4.0+(-1*2)=2.0");
-
-        // C=1.0, 0*anything=0, 1+0=1
-        A = BF16_0; B = BF16_8; C = BF16_1;
-        check_y(BF16_1, "MAC C+0*B = C");
-
-        // C=-1.0, 1*1=1, -1+1=0
-        A = BF16_1; B = BF16_1; C = BF16_N1;
-        check_y(BF16_0, "MAC -1+1*1=0");
-
-        // =============================================
-        // valid_in passthrough
-        // =============================================
-        valid_in = 1; A = BF16_1; B = BF16_1; C = BF16_0; op_mac = 0;
-        check_valid(1'b1);
-
-        valid_in = 0;
-        check_valid(1'b0);
-
-        valid_in = 1;
-        check_valid(1'b1);
-
+        pass_cnt = 0;
+        fail_cnt = 0;
+        op_mac = 0; A = 0; B = 0; C = 0;
         #5;
-        $display("\n=== pe_bf16_comb: PASS=%0d  FAIL=%0d ===\n", pass_cnt, fail_cnt);
+
+        $display("=======================================================");
+        $display(" pe_bf16_comb Testbench");
+        $display("=======================================================");
+
+        // ---- MUL tests (op_mac=0) ----
+        $display("\n--- MUL mode (op_mac=0) ---");
+
+        // T1: 1.0 * 1.0 = 1.0
+        run_test(1, 1'b0, BF16_1P0, BF16_1P0, BF16_0P0, BF16_1P0, "1.0*1.0=1.0 ");
+
+        // T2: 2.0 * 3.0 = 6.0
+        run_test(2, 1'b0, BF16_2P0, BF16_3P0, BF16_0P0, BF16_6P0, "2.0*3.0=6.0 ");
+
+        // T3: -1.5 * 2.0 = -3.0
+        run_test(3, 1'b0, BF16_N1P5, BF16_2P0, BF16_0P0, BF16_N3P0, "-1.5*2=-3.0 ");
+
+        // T4: 0.0 * 5.0 = 0.0
+        run_test(4, 1'b0, BF16_0P0, BF16_5P0, BF16_0P0, BF16_0P0, "0.0*5.0=0.0 ");
+
+        // T5: 1.0 * 0.0 = 0.0
+        run_test(5, 1'b0, BF16_1P0, BF16_0P0, BF16_0P0, BF16_0P0, "1.0*0.0=0.0 ");
+
+        // T6: 0.5 * 0.5 = 0.25  (0.25 = 0_01111101_0000000 = 3E80)
+        run_test(6, 1'b0, BF16_0P5, BF16_0P5, BF16_0P0, 16'h3E80, "0.5*0.5=0.25");
+
+        // T7: MAX * MAX → should clamp to INF or large
+        begin
+            op_mac = 1'b0; A = BF16_MAX; B = BF16_MAX; C = 16'h0;
+            #10;
+            $write("Test 7 [MAX*MAX~INF]: Y=%h  ", Y);
+            // exponent will overflow → INF = 7F80
+            if (Y[14:7] == 8'hFF) begin
+                $display("PASS (overflow→inf/nan exp=FF)");
+                pass_cnt = pass_cnt + 1;
+            end else begin
+                $display("FAIL *** exp=%h, expected FF ***", Y[14:7]);
+                fail_cnt = fail_cnt + 1;
+            end
+        end
+
+        // ---- MAC tests (op_mac=1) ----
+        $display("\n--- MAC mode (op_mac=1) ---");
+
+        // T8: 1.0 + 2.0*3.0 = 7.0
+        run_test(8, 1'b1, BF16_2P0, BF16_3P0, BF16_1P0, BF16_7P0, "1+2*3=7     ");
+
+        // T9: 0.5 + 0.5*0.5 = 0.75
+        run_test(9, 1'b1, BF16_0P5, BF16_0P5, BF16_0P5, BF16_0P75, "0.5+0.5*0.5 ");
+
+        // T10: -4.0 + 2.0*3.0 = 2.0
+        run_test(10, 1'b1, BF16_2P0, BF16_3P0, BF16_N4P0, BF16_2P0, "-4+2*3=2    ");
+
+        // T11: 0.0 + 1.0*1.0 = 1.0  (C=zero passthrough test)
+        run_test(11, 1'b1, BF16_1P0, BF16_1P0, BF16_0P0, BF16_1P0, "0+1*1=1     ");
+
+        // T12: 3.0 + 0.0*5.0 = 3.0  (A=0 gives prod=0, add C)
+        run_test(12, 1'b1, BF16_0P0, BF16_5P0, BF16_3P0, BF16_3P0, "3+0*5=3     ");
+
+        // T13: MAC C=0, A=0.5, B=0.5 → 0.25
+        run_test(13, 1'b1, BF16_0P5, BF16_0P5, BF16_0P0, 16'h3E80, "0+.5*.5=0.25");
+
+        // T14: 1.0 + (-1.0)*1.0 = 0.0
+        // -1.0 = BF80
+        run_test(14, 1'b1, 16'hBF80, BF16_1P0, BF16_1P0, BF16_0P0, "1+(-1)*1=0  ");
+
+        // ---- op_mac switching test ----
+        $display("\n--- op_mac switching ---");
+        // T15: Same A,B,C with op_mac=0 gives prod, op_mac=1 gives C+prod
+        begin
+            A = BF16_2P0; B = BF16_3P0; C = BF16_1P0;
+            op_mac = 1'b0; #10;
+            $write("Test 15a [switch MUL]: Y=%h expected=%h  ", Y, BF16_6P0);
+            if (Y === BF16_6P0) begin $display("PASS"); pass_cnt=pass_cnt+1; end
+            else begin $display("FAIL"); fail_cnt=fail_cnt+1; end
+
+            op_mac = 1'b1; #10;
+            $write("Test 15b [switch MAC]: Y=%h expected=%h  ", Y, BF16_7P0);
+            if (Y === BF16_7P0) begin $display("PASS"); pass_cnt=pass_cnt+1; end
+            else begin $display("FAIL"); fail_cnt=fail_cnt+1; end
+        end
+
+        // ---- Summary ----
+        $display("\n=======================================================");
+        $display(" RESULTS: %0d PASS, %0d FAIL out of %0d tests",
+                  pass_cnt, fail_cnt, pass_cnt+fail_cnt);
+        $display("=======================================================");
+
+        if (fail_cnt == 0)
+            $display(" ALL TESTS PASSED");
+        else
+            $display(" SOME TESTS FAILED - check above");
+
         $finish;
     end
+
 endmodule

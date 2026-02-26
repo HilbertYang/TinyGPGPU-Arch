@@ -2,7 +2,6 @@
 // Combinational PE:
 //   op_mac=0: Y = A*B
 //   op_mac=1: Y = C + A*B
-// valid_out mirrors valid_in.
 //
 // Fix: all reg declarations moved to module scope (Verilog-2001 compatible,
 //      no declarations inside unnamed always blocks).
@@ -199,12 +198,10 @@ module bf16_add(
 endmodule
 
 module pe_bf16_comb(
-  input  wire        valid_in,
   input  wire        op_mac,    // 0=MUL, 1=MAC
   input  wire [15:0] A,
   input  wire [15:0] B,
   input  wire [15:0] C,
-  output wire        valid_out,
   output wire [15:0] Y
 );
   wire [15:0] prod;
@@ -213,6 +210,5 @@ module pe_bf16_comb(
   bf16_mul UM(.a(A), .b(B), .y(prod));
   bf16_add UA(.a(C), .b(prod), .y(sum));
 
-  assign valid_out = valid_in;
   assign Y = op_mac ? sum : prod;
 endmodule
