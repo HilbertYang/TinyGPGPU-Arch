@@ -3,6 +3,12 @@
 // R0 is hardwired to zero
 // Supports synchronous write, asynchronous read
 // Each 64-bit register is viewed as 4 × 16-bit lanes for SIMD ops
+//
+// Internal forwarding:
+//   If a read port addresses the same register being written this cycle,
+//   the write data is forwarded combinationally so the new value is
+//   visible on the read port in the same clock cycle (write-before-read).
+//   R0 forwarding is suppressed — R0 is always 0.
 
 module regfile(
     input  wire        clk,
@@ -24,9 +30,15 @@ module regfile(
 
     reg [63:0] regs [0:15];
 
+    // Forwarding condition:
+    //   active write  AND  addresses match  AND  not R0
+    wire fwd1 = wr_en && (wr_addr == rs1_addr) && (rs1_addr != 4'd0);
+    wire fwd2 = wr_en && (wr_addr == rs2_addr) && (rs2_addr != 4'd0);
+    wire fwd3 = wr_en && (wr_addr == rs3_addr) && (rs3_addr != 4'd0);
+
     integer i;
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin //write all reg with 0 when reset
+        if (!rst_n) begin
             for (i = 0; i < 16; i = i + 1)
                 regs[i] <= 64'd0;
         end else if (wr_en && wr_addr != 4'd0) begin
@@ -34,9 +46,14 @@ module regfile(
         end
     end
 
-    // Async reads; R0 always 0
-    assign rs1_data = (rs1_addr == 4'd0) ? 64'd0 : regs[rs1_addr];
-    assign rs2_data = (rs2_addr == 4'd0) ? 64'd0 : regs[rs2_addr];
-    assign rs3_data = (rs3_addr == 4'd0) ? 64'd0 : regs[rs3_addr];
+    // Async reads with forwarding; R0 always 0
+    assign rs1_data = (rs1_addr == 4'd0) ? 64'd0 :
+                      fwd1               ? wr_data : regs[rs1_addr];
+
+    assign rs2_data = (rs2_addr == 4'd0) ? 64'd0 :
+                      fwd2               ? wr_data : regs[rs2_addr];
+
+    assign rs3_data = (rs3_addr == 4'd0) ? 64'd0 :
+                      fwd3               ? wr_data : regs[rs3_addr];
 
 endmodule
