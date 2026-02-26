@@ -3,6 +3,9 @@
 //   op_mac=0: Y = A*B
 //   op_mac=1: Y = C + A*B
 // valid_out mirrors valid_in.
+//
+// Fix: all reg declarations moved to module scope (Verilog-2001 compatible,
+//      no declarations inside unnamed always blocks).
 
 module bf16_unpack(
   input  wire [15:0] x,
@@ -14,7 +17,7 @@ module bf16_unpack(
   assign s = x[15];
   assign e = x[14:7];
   assign f = x[6:0];
-  assign is_zero = (x[14:0] == 15'b0); // +/-0
+  assign is_zero = (x[14:0] == 15'b0);
 endmodule
 
 module bf16_mul(
@@ -22,33 +25,33 @@ module bf16_mul(
   input  wire [15:0] b,
   output reg  [15:0] y
 );
-  wire sa,sb,za,zb;
-  wire [7:0] ea,eb;
-  wire [6:0] fa,fb;
+  wire sa, sb, za, zb;
+  wire [7:0] ea, eb;
+  wire [6:0] fa, fb;
 
   bf16_unpack UA(a, sa, ea, fa, za);
   bf16_unpack UB(b, sb, eb, fb, zb);
 
   wire s = sa ^ sb;
 
-  // simplified: treat exponent==0 as zero (no denorm support)
   wire norm_a = (!za) && (ea != 8'd0);
   wire norm_b = (!zb) && (eb != 8'd0);
 
-  wire [7:0] ma = norm_a ? {1'b1, fa} : 8'd0; // Q1.7
+  wire [7:0] ma = norm_a ? {1'b1, fa} : 8'd0;
   wire [7:0] mb = norm_b ? {1'b1, fb} : 8'd0;
 
-  wire [15:0] prod = ma * mb; // Q2.14
+  wire [15:0] prod = ma * mb;
 
-  integer e_tmp;
+  // Module-level regs (Verilog-2001: no decls inside always blocks)
+  integer    e_tmp;
   reg [15:0] m_norm;
   reg [6:0]  frac;
   reg [7:0]  exp_out;
-  reg guard, sticky, lsb;
+  reg        guard, sticky, lsb;
 
   always @(*) begin
     if (ma == 0 || mb == 0) begin
-      y = {s, 8'd0, 7'd0}; // +/-0
+      y = {s, 8'd0, 7'd0};
     end else begin
       e_tmp  = (ea + eb) - 8'd127;
       m_norm = prod;
@@ -85,13 +88,30 @@ module bf16_add(
   input  wire [15:0] b,
   output reg  [15:0] y
 );
-  wire sa,sb,za,zb;
-  wire [7:0] ea,eb;
-  wire [6:0] fa,fb;
+  wire sa, sb, za, zb;
+  wire [7:0] ea, eb;
+  wire [6:0] fa, fb;
+
   bf16_unpack UA(a, sa, ea, fa, za);
   bf16_unpack UB(b, sb, eb, fb, zb);
 
   integer i;
+
+  // All reg declarations at module scope (Verilog-2001 compatible)
+  reg [7:0]          ma_u, mb_u;
+  reg signed [12:0]  ma_s, mb_s;
+  reg [7:0]          e_big, e_small;
+  reg signed [12:0]  m_big, m_small;
+  reg [4:0]          shift;
+  reg                dropped;
+  reg signed [13:0]  sum;
+  reg [13:0]         mag;
+  reg                s_out;
+  reg [7:0]          e_tmp;
+  reg [13:0]         norm;
+  reg [6:0]          frac;
+  reg                guard, sticky, lsb;
+  reg [7:0]          exp_out;
 
   always @(*) begin
     if (za) begin
@@ -99,27 +119,10 @@ module bf16_add(
     end else if (zb) begin
       y = a;
     end else if (ea == 0) begin
-      y = b; // simplified
+      y = b;
     end else if (eb == 0) begin
-      y = a; // simplified
+      y = a;
     end else begin
-      reg [7:0] ma_u, mb_u;
-      reg signed [12:0] ma_s, mb_s;
-      reg [7:0] e_big, e_small;
-      reg signed [12:0] m_big, m_small;
-      reg [4:0] shift;
-      reg dropped;
-
-      reg signed [13:0] sum;
-      reg [13:0] mag;
-      reg s_out;
-      reg [7:0] e_tmp;
-      reg [13:0] norm;
-
-      reg [6:0] frac;
-      reg guard, sticky, lsb;
-      reg [7:0] exp_out;
-
       ma_u = {1'b1, fa};
       mb_u = {1'b1, fb};
 
@@ -140,7 +143,7 @@ module bf16_add(
       if (shift > 5'd12) shift = 5'd12;
 
       dropped = 1'b0;
-      for (i=0; i<shift; i=i+1) begin
+      for (i = 0; i < shift; i = i + 1) begin
         dropped = dropped | m_small[0];
         m_small = m_small >>> 1;
       end
@@ -162,13 +165,13 @@ module bf16_add(
         e_tmp = e_big;
         norm  = mag;
 
-        // normalize to place leading 1 at bit10
+        // normalize: place leading 1 at bit 10
         while (norm[13:11] != 0) begin
-          norm = norm >> 1;
+          norm  = norm >> 1;
           e_tmp = e_tmp + 1;
         end
         while (norm[10] == 0) begin
-          norm = norm << 1;
+          norm  = norm << 1;
           e_tmp = e_tmp - 1;
         end
 
