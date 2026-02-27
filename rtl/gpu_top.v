@@ -28,14 +28,16 @@ module gpu_top(
     // Host: instruction memory programming
     input  wire        imem_prog_en,
     input  wire [8:0]  imem_prog_addr,
-    input  wire [31:0] imem_prog_data,
+    input  wire [31:0] imem_prog_din,
+    output  wire [31:0] imem_prog_dout,
+
 
     // Host: data memory access (NOW uses Port A)
     input  wire        dmem_host_en,
     input  wire        dmem_host_we,
     input  wire [7:0]  dmem_host_addr,
     input  wire [63:0] dmem_host_din,
-    output wire [63:0] dmem_host_dout
+    output wire [63:0] dmem_host_dout,
 
     // External / programming interface (Port B RESERVED)
     input  wire        dmem_prog_en,
@@ -53,12 +55,28 @@ module gpu_top(
     wire        imem_we_gpu;
     wire [31:0] imem_din_gpu;
     wire [31:0] imem_dout;
+    wire [31:0] imem_dout_gpu;
 
     // Mux: External programming selector
     wire [8:0]  imem_addr_mux = imem_prog_en ? imem_prog_addr  : imem_addr_gpu;
     wire        imem_en_mux   = imem_prog_en ? 1'b1            : imem_en_gpu;
     wire        imem_we_mux   = imem_prog_en ? 1'b1            : imem_we_gpu;
-    wire [31:0] imem_din_mux  = imem_prog_en ? imem_prog_data  : imem_din_gpu;
+    wire [31:0] imem_din_mux  = imem_prog_en ? imem_prog_din   : imem_din_gpu;
+
+    // synchronous：douta use last address
+    reg imem_prog_en_d;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            imem_prog_en_d <= 1'b0;
+        end else begin 
+            imem_prog_en_d <= imem_prog_en & imem_en_mux;
+        end
+    end
+
+    // Host Read 
+    assign imem_prog_dout = imem_prog_en_d ? imem_dout : 32'd0;
+    // GPU Read 
+    assign imem_dout_gpu  = (!imem_prog_en_d) ? imem_dout : 32'd0;
 
     I_M_32bit_512depth IMEM(
         .addr  (imem_addr_mux),
@@ -92,7 +110,7 @@ module gpu_top(
         if (!rst_n) begin
             dmem_host_en_d <= 1'b0;
         end else begin 
-            dmem_host_en_d <= dmem_host_en & dmem_en_a; // simple align
+            dmem_host_en_d <= dmem_host_en & dmem_en_a;
         end
     end
 
@@ -113,11 +131,11 @@ module gpu_top(
 
         // Port B: external/programming interface
         .clkb  (clk),
-        .enb   (dmem_ext_en),
-        .web   (dmem_ext_we),
-        .addrb (dmem_ext_addr),
-        .dinb  (dmem_ext_din),
-        .doutb (dmem_ext_dout)
+        .enb   (dmem_prog_en),
+        .web   (dmem_prog_we),
+        .addrb (dmem_prog_addr),
+        .dinb  (dmem_prog_din),
+        .doutb (dmem_prog_dout)
     );
 
     //=========================================================
@@ -137,13 +155,11 @@ module gpu_top(
         .dmem_din_a     (dmem_din_gpu),
         .dmem_we_a      (dmem_we_gpu),
         .dmem_en_a      (dmem_en_gpu),
-        .dmem_dout_a    (dmem_dout_a),
+        .dmem_dout_a    (dmem_dout_gpu),
 
         .imem_addr      (imem_addr_gpu),
         .imem_en        (imem_en_gpu),
-        .imem_we        (imem_we_gpu),
-        .imem_din       (imem_din_gpu),
-        .imem_dout      (imem_dout)
+        .imem_dout      (imem_dout_gpu)
     );
 
 endmodule
