@@ -8,7 +8,7 @@ Loop:
     4   SETP_GE     0       R5      R4      0       //compare
     5   BRA         0       0       0       RET     //if thread_id > n end the kernel
 
-    6   SHIFTL      R6      R5      0       2        //TID/4
+    6   SHIFTRV     R6      R5      0       2        //TID/4
     7   ADD64       R1      R1      R6      0
     8   ADD64       R3      R3      R6      0          
     9   LD64        R10     R1      0       0
