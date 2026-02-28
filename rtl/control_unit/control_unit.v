@@ -180,9 +180,13 @@ module control_unit (
                 mem_rd_en = 1'b1;
                 rf_wr_en  = 1'b1;
                 wb_sel    = WB_MEM;
+                use_imm  = 1'b1;
+                op_alu   = ALU_ADDI64;
             end
             OP_ST64: begin
                 mem_wr_en = 1'b1;
+                use_imm  = 1'b1;
+                op_alu   = ALU_ADDI64;
                 // rd_addr holds the data register; rs1_addr is the base address
             end
 
