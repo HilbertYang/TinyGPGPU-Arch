@@ -196,26 +196,18 @@ module tb_gpu_core3;
         begin
             // PC  0: MOV R1, 7
             imem_write(9'd0,  ENC(OP_MOV, 4'd1, 4'd0, 4'd0, 15'd7));
-            imem_write(9'd1,  NOP);
-            imem_write(9'd2,  NOP);
-            imem_write(9'd3,  NOP);
-            // PC  4: MOV R2, 5
-            imem_write(9'd4,  ENC(OP_MOV, 4'd2, 4'd0, 4'd0, 15'd5));
-            imem_write(9'd5,  NOP);
-            imem_write(9'd6,  NOP);
-            imem_write(9'd7,  NOP);
+            // PC  1: MOV R2, 5
+            imem_write(9'd1,  ENC(OP_MOV, 4'd2, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd2 , NOP);
+            imem_write(9'd3 , NOP);
             // PC  8: ADD_I16 R3, R1, R2
-            imem_write(9'd8,  ENC(OP_ADD_I16, 4'd3, 4'd1, 4'd2, 15'd0));
-            imem_write(9'd9,  NOP);
-            imem_write(9'd10, NOP);
-            imem_write(9'd11, NOP);
+            imem_write(9'd4,  ENC(OP_ADD_I16, 4'd3, 4'd1, 4'd2, 15'd0));
+            imem_write(9'd5 , NOP);
+            imem_write(9'd6 , NOP);
             // PC 12: ST64 R3, R0+0  (store R3 to DMEM[R0=0])
-            imem_write(9'd12, ENC(OP_ST64, 4'd3, 4'd0, 4'd0, 15'd0));
-            imem_write(9'd13, NOP);
-            imem_write(9'd14, NOP);
-            imem_write(9'd15, NOP);
+            imem_write(9'd7 , ENC(OP_ST64, 4'd3, 4'd0, 4'd0, 15'd0));
             // PC 16: RET
-            imem_write(9'd16, ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd8 , ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
         end
     endtask
 
@@ -290,7 +282,7 @@ module tb_gpu_core3;
         //   Store to DMEM[0]
         //   Expected: DMEM[0] = 64'h0000_0000_0000_000C
         // ========================================================
-        $display("\n=== TEST 1: ADD_I16 (3 NOPs after each write) ===");
+        $display("\n=== TEST 1: ADD_I16 ===");
         load_test1;
         reset_pc;
         run_until_done(200);
@@ -305,7 +297,7 @@ module tb_gpu_core3;
         //   Store to DMEM[12]
         //   Expected: DMEM[12] = 64'h4140_4140_4140_4140
         // ========================================================
-        $display("\n=== TEST 2: MUL_BF16 + MAC_BF16 / FMA (3 NOPs after each FMA) ===");
+        $display("\n=== TEST 2: MUL_BF16 + MAC_BF16 / FMA  ===");
 
         // Pre-load bf16 input vectors
         dmem_write(8'd10, 64'h4000_4000_4000_4000);   // 2.0 × 4 lanes
@@ -315,6 +307,22 @@ module tb_gpu_core3;
         reset_pc;
         run_until_done(300);
         dmem_check(8'd12, 64'h4140_4140_4140_4140);
+
+        // ========================================================
+        // TEST 3: jump
+   
+        // ========================================================
+        $display("\n=== TEST 3: BPR/BR  ===");
+
+        // Pre-load bf16 input vectors
+        dmem_write(8'd10, 64'h4000_4000_4000_4000);   // 2.0 × 4 lanes
+        dmem_write(8'd11, 64'h4040_4040_4040_4040);   // 3.0 × 4 lanes
+
+        load_test=3;
+        reset_pc;
+        run_until_done(300);
+        dmem_check(8'd12, 64'h4140_4140_4140_4140);
+
 
         $display("\n=== ALL TESTS COMPLETE ===");
         $finish;
