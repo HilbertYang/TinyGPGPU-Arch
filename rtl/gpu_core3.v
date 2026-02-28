@@ -39,12 +39,12 @@
 `timescale 1ns/1ps
 module gpu_core (
     input  wire        clk,
-    input  wire        reset,
+    input  wire        rst_n,
 
     input  wire        run,           
     input  wire        step,          
     input  wire        pc_reset_pulse, 
-    output wire        done;
+    output wire        done,
 
    //param_interface
     input  wire        param_wr_en,
@@ -119,6 +119,9 @@ module gpu_core (
         pc <= pc + 9'd1;
         end
     end
+
+    assign done = memwb_is_ret
+    
     //==========================================================
     // IF stage
     //==========================================================
@@ -169,7 +172,7 @@ module gpu_core (
     wire [4:0]  id_op  = ifid_instr[31:27];
 
     //control unit
-    wire [3:0]  id_rd_addr;
+    wire [3:0]  id_rs3_addr_cu;
     wire [3:0]  id_rs1_addr_cu;
     wire [3:0]  id_rs2_addr_cu;
     wire [14:0] id_imm15_cu;
@@ -416,6 +419,10 @@ module gpu_core (
     // MEM stage
     //==========================================================
     // DMEM address comes from ALU (RS1 + imm15 already computed in EX)
+    wire [7:0]  dmem_addr_a;
+    wire [63:0] dmem_din_a;
+    wire        dmem_we_a;
+    wire        dmem_en_a;
     assign dmem_addr_a = exmem_alu_y[7:0];
     assign dmem_din_a  = exmem_rs3_val;
     assign dmem_we_a   = exmem_mem_wr_en;
@@ -424,7 +431,6 @@ module gpu_core (
     wire [63:0] dmem_douta;
     wire [63:0] dmem_doutb;
     assign dmem_prog_rdata = dmem_doutb;
-
 
     //----------------------------------------------------------------------------------
     // Data Memory: 256x64-bit, single port, with separate programming interface
