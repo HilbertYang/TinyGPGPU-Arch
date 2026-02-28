@@ -8,6 +8,10 @@
 Loop:
     5   SETP_GE     0       R5      R4      0       //compare
     6   BPR         0       0       0       RET     //if thread_id > n end the kernel
+        NOP                                         //ADD NOP TO AVOID FLUSH
+        NOP
+        NOP
+        
 
     7   ADDI64      R1      R1      0       1      // increment pointers by 1
     8   ADDI64      R2      R2      0       1
@@ -20,5 +24,8 @@ Loop:
     d   ST64        R12     R3      0       0
     e   ADDI64      R5      R5      0       4
     f   BR          0       0       0       Loop
+        NOP
+        NOP
+        NOP
 RET:
     10  RET         0       0       0       0     //DONE CALCULATION
