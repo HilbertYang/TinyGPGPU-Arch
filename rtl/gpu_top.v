@@ -52,11 +52,12 @@ module gpu_top(
     //=========================================================
     wire [8:0]  imem_addr_gpu;
     wire        imem_en_gpu;
-    wire        imem_we_gpu;
-    wire [31:0] imem_din_gpu;
+    // GPU never writes IMEM
+    wire        imem_we_gpu  = 1'b0;
+    wire [31:0] imem_din_gpu = 32'd0;
     wire [31:0] imem_dout;
     wire [31:0] imem_dout_gpu;
-
+    
     // Mux: External programming selector
     wire [8:0]  imem_addr_mux = imem_prog_en ? imem_prog_addr  : imem_addr_gpu;
     wire        imem_en_mux   = imem_prog_en ? 1'b1            : imem_en_gpu;
