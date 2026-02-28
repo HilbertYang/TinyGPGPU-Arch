@@ -120,8 +120,8 @@ module gpu_core (
         end
     end
 
-    assign done = memwb_is_ret
-    
+    assign done = memwb_is_ret;
+
     //==========================================================
     // IF stage
     //==========================================================
