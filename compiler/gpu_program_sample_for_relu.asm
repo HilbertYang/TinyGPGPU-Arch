@@ -9,15 +9,14 @@ Loop:
     5   SETP_GE     0       R5      R4      0       //compare
     6   BPR         0       0       0       RET     //if thread_id > n end the kernel
 
-    7   SHIFTRV     R6      R5      0       2        //TID/4
-    8   ADD64       R1      R1      R6      0
-    9   ADD64       R3      R3      R6      0
-    a   LD64        R10     R1      0       0
+    7   ADDI64      R1      R1      0       1
+    8   ADDI64      R3      R3      0       1
+    9   LD64        R10     R1      0       0
 
-    b   MAX_I16     R12     R10     R0      0
+    a   MAX_I16     R12     R10     R0      0
 
-    c   ST64        R12     R3      0       0
-    d   ADDIMM      R5      R5      0       4
-    e   BR          0       0       0       Loop
+    b   ST64        R12     R3      0       0
+    c   ADDI64      R5      R5      0       4
+    d   BR          0       0       0       Loop
 RET:
-    f  RET         0       0       0       0     //DONE CALCULATION
+    e  RET         0       0       0       0     //DONE CALCULATION
