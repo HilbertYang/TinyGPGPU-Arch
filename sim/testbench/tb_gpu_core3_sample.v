@@ -424,6 +424,56 @@ module tb_gpu_core3;
     end
     endtask
     // -------------------------------------------------------
+    // Test 7: OP_MAX_I16
+    // -------------------------------------------------------
+    task load_test7;
+        begin
+            // PC  0: LD R1,
+            imem_write(9'd0,  ENC(OP_LD64, 4'd1, 4'd0, 4'd0, 15'h0));
+            imem_write(9'd1,  NOP);
+            imem_write(9'd2,  NOP);
+            imem_write(9'd3,  NOP);
+            // PC  4: LD R2,
+            imem_write(9'd4,  ENC(OP_LD64, 4'd2, 4'd0, 4'd0, 15'h1));
+            imem_write(9'd5,  NOP);
+            imem_write(9'd6,  NOP);
+            imem_write(9'd7,  NOP);
+            imem_write(9'd8, ENC(OP_MAX_I16, 4'd3, 4'd1, 4'd2, 15'd0));
+            imem_write(9'd9, NOP);
+            imem_write(9'd10, NOP);
+            imem_write(9'd11, NOP);
+            imem_write(9'd12, ENC(OP_ST64, 4'd3, 4'd0, 4'd0, 15'd2));
+            // PC 16: RET
+            imem_write(9'd13, ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
+        end
+    endtask
+
+    // -------------------------------------------------------
+    // Test 8: OP_ADD64
+    // -------------------------------------------------------
+    task load_test8;
+        begin
+            // PC  0: MOV R1, 7
+            imem_write(9'd0,  ENC(OP_MOV, 4'd1, 4'd0, 4'd0, 15'd7));
+            imem_write(9'd1,  NOP);
+            imem_write(9'd2,  NOP);
+            imem_write(9'd3,  NOP);
+            // PC  4: MOV R2, 5
+            imem_write(9'd4,  ENC(OP_MOV, 4'd2, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd5,  NOP);
+            imem_write(9'd6,  NOP);
+            imem_write(9'd7,  NOP);
+            // PC 12: ST64 R2, R0+1  (store R2 to DMEM[R0+1])
+            imem_write(9'd8, ENC(OP_ST64, 4'd2, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd9, NOP);
+            imem_write(9'd10, NOP);
+            imem_write(9'd11, NOP);
+            // PC 16: RET
+            imem_write(9'd12, ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
+        end
+    endtask
+
+    // -------------------------------------------------------
     // Main
     // -------------------------------------------------------
     initial begin
@@ -577,6 +627,17 @@ module tb_gpu_core3;
         dmem_check(8'd40, 64'd40);
         dmem_check(8'd50, 64'd50);
         
+        // ========================================================
+        // TEST 7: MAX
+        // ========================================================
+        $display("\n=== TEST 7: MAX ===");
+        dmem_write(8'd0, 64'h0007_0006_0005_0004);
+        dmem_write(8'd1, 64'h0004_0005_0006_0007);
+        
+        load_test7;
+        reset_pc;
+        run_until_done(200);
+        dmem_check(8'd2, 64'h0007_0006_0006_0007);
 
         $display("\n=== ALL TESTS COMPLETE ===");
         $finish;
