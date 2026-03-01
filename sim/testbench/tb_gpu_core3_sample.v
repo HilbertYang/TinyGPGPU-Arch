@@ -88,17 +88,27 @@ module tb_gpu_core3;
         ENC = {op, rd, rs1, rs2, imm15};
     endfunction
 
-    // Opcodes (match control_unit.v)
+
     localparam [4:0]
         OP_NOP      = 5'h00,
         OP_ADD_I16  = 5'h01,
+        OP_SUB_I16  = 5'h02,
+        OP_MAX_I16  = 5'h03,
+        OP_ADD64    = 5'h04,
+        OP_ADDI64   = 5'h05,
+        OP_SETP_GE  = 5'h06,
+        OP_SHIFTLV  = 5'h07,
+        OP_SHIFTRV  = 5'h08,
         OP_MAC_BF16 = 5'h09,
         OP_MUL_BF16 = 5'h0a,
         OP_LD64     = 5'h10,
         OP_ST64     = 5'h11,
         OP_MOV      = 5'h12,
-        OP_RET      = 5'h15;
-
+        OP_BPR      = 5'h13,
+        OP_BR       = 5'h14,
+        OP_RET      = 5'h15,
+        OP_LD_PARAM = 5'h16;
+  
     localparam [31:0] NOP = 32'h0000_0000;
 
     // -------------------------------------------------------
@@ -116,6 +126,21 @@ module tb_gpu_core3;
             imem_prog_wdata = data;
             @(posedge clk); #1;   // BRAM write
             imem_prog_we = 1'b0;
+        end
+    endtask
+
+
+    // Write 64-bit base address to param
+    task param_write;
+        input [2:0]  addr;
+        input [63:0] data;
+        begin
+            @(negedge clk);
+            param_wr_en    = 1'b1;
+            param_wr_addr  = addr;
+            param_wr_data = data;
+            @(posedge clk); #1;
+            param_wr_en = 1'b0;
         end
     endtask
 
@@ -196,18 +221,21 @@ module tb_gpu_core3;
         begin
             // PC  0: MOV R1, 7
             imem_write(9'd0,  ENC(OP_MOV, 4'd1, 4'd0, 4'd0, 15'd7));
-            // PC  1: MOV R2, 5
-            imem_write(9'd1,  ENC(OP_MOV, 4'd2, 4'd0, 4'd0, 15'd5));
-            imem_write(9'd2 , NOP);
-            imem_write(9'd3 , NOP);
-            // PC  8: ADD_I16 R3, R1, R2
-            imem_write(9'd4,  ENC(OP_ADD_I16, 4'd3, 4'd1, 4'd2, 15'd0));
-            imem_write(9'd5 , NOP);
-            imem_write(9'd6 , NOP);
-            // PC 12: ST64 R3, R0+0  (store R3 to DMEM[R0=0])
-            imem_write(9'd7 , ENC(OP_ST64, 4'd3, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd1,  NOP);
+            imem_write(9'd2,  NOP);
+            imem_write(9'd3,  NOP);
+            // PC  4: MOV R2, 5
+            imem_write(9'd4,  ENC(OP_MOV, 4'd2, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd5,  NOP);
+            imem_write(9'd6,  NOP);
+            imem_write(9'd7,  NOP);
+            // PC 12: ST64 R2, R0+1  (store R2 to DMEM[R0+1])
+            imem_write(9'd8, ENC(OP_ST64, 4'd2, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd9, NOP);
+            imem_write(9'd10, NOP);
+            imem_write(9'd11, NOP);
             // PC 16: RET
-            imem_write(9'd8 , ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd12, ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
         end
     endtask
 
@@ -260,7 +288,141 @@ module tb_gpu_core3;
             imem_write(9'd32, ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
         end
     endtask
+    // -------------------------------------------------------
+    // Test 3: Jump
+    // -------------------------------------------------------
+    task load_test3;
+        begin
+ 
+            imem_write(9'd0,  ENC(OP_MOV,      4'd1, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd1,  ENC(OP_MOV,      4'd2, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd2,  ENC(OP_MOV,      4'd3, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd3,  ENC(OP_MOV,      4'd4, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd4,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd5,  ENC(OP_MOV,      4'd6, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd6 , NOP);
+            imem_write(9'd7 , NOP);
+            imem_write(9'd8 , NOP);
+            imem_write(9'd9 , NOP);
+            imem_write(9'd10,  ENC(OP_BR,      4'd0, 4'd0, 4'd0, 15'd15));
+            imem_write(9'd11, NOP);
+            imem_write(9'd12, NOP);
+            imem_write(9'd13,  ENC(OP_MOV,      4'd1, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd14,  ENC(OP_MOV,      4'd2, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd15,  ENC(OP_MOV,      4'd3, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd16,  ENC(OP_MOV,      4'd4, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd17,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd18,  ENC(OP_MOV,      4'd6, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd19, ENC(OP_ST64,     4'd1, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd20, ENC(OP_ST64,     4'd2, 4'd0, 4'd0, 15'd2));
+            imem_write(9'd21, ENC(OP_ST64,     4'd3, 4'd0, 4'd0, 15'd3));
+            imem_write(9'd22, ENC(OP_ST64,     4'd4, 4'd0, 4'd0, 15'd4));
+            imem_write(9'd23, ENC(OP_ST64,     4'd5, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd24, ENC(OP_ST64,     4'd6, 4'd0, 4'd0, 15'd6));
+            imem_write(9'd25, ENC(OP_RET, 4'd0, 4'd0, 4'd0, 15'd0));
+        end
+    endtask
 
+    // -------------------------------------------------------
+    // Test 4:Conditional jump
+    // -------------------------------------------------------
+    task load_test4;
+        begin
+ 
+            imem_write(9'd0,  ENC(OP_MOV,      4'd1, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd1,  ENC(OP_MOV,      4'd2, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd2,  ENC(OP_MOV,      4'd3, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd3,  ENC(OP_MOV,      4'd4, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd4,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd5,  ENC(OP_MOV,      4'd6, 4'd0, 4'd0, 15'd10));
+            imem_write(9'd6 , NOP);
+            imem_write(9'd7 , NOP);
+            imem_write(9'd8,  ENC(OP_SETP_GE,  4'd0, 4'd5, 4'd6, 15'd0));
+            imem_write(9'd9 , NOP);
+            imem_write(9'd10 , NOP);
+            imem_write(9'd11 , NOP);
+            imem_write(9'd12,  ENC(OP_BPR,      4'd0, 4'd0, 4'd0, 15'd19));
+            imem_write(9'd13, NOP);
+            imem_write(9'd14, NOP);
+            imem_write(9'd15, NOP);
+            imem_write(9'd16, NOP);
+            imem_write(9'd17,  ENC(OP_MOV,      4'd1, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd18,  ENC(OP_MOV,      4'd2, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd19,  ENC(OP_MOV,      4'd3, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd20,  ENC(OP_MOV,      4'd4, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd21,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd22,  ENC(OP_MOV,      4'd6, 4'd0, 4'd0, 15'd1));
+
+            imem_write(9'd23, ENC(OP_ST64,     4'd1, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd24, ENC(OP_ST64,     4'd2, 4'd0, 4'd0, 15'd2));
+            imem_write(9'd25, ENC(OP_ST64,     4'd3, 4'd0, 4'd0, 15'd3));
+            imem_write(9'd26, ENC(OP_ST64,     4'd4, 4'd0, 4'd0, 15'd4));
+            imem_write(9'd27, ENC(OP_ST64,     4'd5, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd28, ENC(OP_ST64,     4'd6, 4'd0, 4'd0, 15'd6));
+
+            imem_write(9'd29, ENC(OP_RET,      4'd0, 4'd0, 4'd0, 15'd0));
+        end
+    endtask
+
+    // -------------------------------------------------------
+    // Test 5:LOAD PARAM
+    // -------------------------------------------------------
+    task load_test5;
+        begin
+ 
+          imem_write(9'd0,  ENC(OP_MOV,      4'd1, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd1,  ENC(OP_MOV,      4'd2, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd2,  ENC(OP_MOV,      4'd3, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd3,  ENC(OP_MOV,      4'd4, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd4,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd5,  ENC(OP_MOV,      4'd6, 4'd0, 4'd0, 15'd10));
+            imem_write(9'd6 , NOP);
+            imem_write(9'd7 , NOP);
+            imem_write(9'd8,  ENC(OP_SETP_GE,  4'd0, 4'd5, 4'd6, 15'd0));
+            imem_write(9'd9 , NOP);
+            imem_write(9'd10 , NOP);
+            imem_write(9'd11 , NOP);
+            imem_write(9'd12,  ENC(OP_LD_PARAM,      4'd1, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd13, ENC(OP_LD_PARAM,      4'd2, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd14, ENC(OP_LD_PARAM,      4'd3, 4'd0, 4'd0, 15'd2));
+            imem_write(9'd15, NOP);
+            imem_write(9'd16, NOP);
+            imem_write(9'd17,  NOP);
+            imem_write(9'd18,  NOP);
+            imem_write(9'd19,  NOP);
+            imem_write(9'd20,  ENC(OP_MOV,      4'd4, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd21,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd1));
+            imem_write(9'd22,  ENC(OP_MOV,      4'd6, 4'd0, 4'd0, 15'd1));
+
+            imem_write(9'd23, ENC(OP_ST64,     4'd1, 4'd1, 4'd0, 15'd0));
+            imem_write(9'd24, ENC(OP_ST64,     4'd2, 4'd2, 4'd0, 15'd0));
+            imem_write(9'd25, ENC(OP_ST64,     4'd3, 4'd3, 4'd0, 15'd0));
+            imem_write(9'd26, ENC(OP_ST64,     4'd4, 4'd0, 4'd0, 15'd4));
+            imem_write(9'd27, ENC(OP_ST64,     4'd5, 4'd0, 4'd0, 15'd5));
+            imem_write(9'd28, ENC(OP_ST64,     4'd6, 4'd0, 4'd0, 15'd6));
+
+            imem_write(9'd29, ENC(OP_RET,      4'd0, 4'd0, 4'd0, 15'd0));
+        end
+    endtask
+    
+    //=======================================================
+    //TASK 6 ST
+    //=======================================================
+    task load_test6;
+    begin
+        imem_write(9'd0,  ENC(OP_MOV,      4'd1, 4'd0, 4'd0, 15'd10));
+        imem_write(9'd1,  ENC(OP_MOV,      4'd2, 4'd0, 4'd0, 15'd20));
+        imem_write(9'd2,  ENC(OP_MOV,      4'd3, 4'd0, 4'd0, 15'd30));
+        imem_write(9'd3,  ENC(OP_MOV,      4'd4, 4'd0, 4'd0, 15'd40));
+        imem_write(9'd4,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd50));
+        imem_write(9'd5,  ENC(OP_ST64,     4'd1, 4'd1, 4'd0, 15'd0));
+        imem_write(9'd6,  ENC(OP_ST64,     4'd2, 4'd2, 4'd0, 15'd0));
+        imem_write(9'd7,  ENC(OP_ST64,     4'd3, 4'd3, 4'd0, 15'd0));
+        imem_write(9'd8,  ENC(OP_ST64,     4'd4, 4'd4, 4'd0, 15'd0));
+        imem_write(9'd9,  ENC(OP_ST64,     4'd5, 4'd5, 4'd0, 15'd0));
+        imem_write(9'd10, ENC(OP_RET,      4'd0, 4'd0, 4'd0, 15'd0));
+    end
+    endtask
     // -------------------------------------------------------
     // Main
     // -------------------------------------------------------
@@ -282,11 +444,11 @@ module tb_gpu_core3;
         //   Store to DMEM[0]
         //   Expected: DMEM[0] = 64'h0000_0000_0000_000C
         // ========================================================
-        $display("\n=== TEST 1: ADD_I16 ===");
+        $display("\n=== TEST 1: ADD_I16 (3 NOPs after each write) ===");
         load_test1;
         reset_pc;
         run_until_done(200);
-        dmem_check(8'd0, 64'h0000_0000_0000_000C);
+        dmem_check(8'd1, 64'h0000_0000_0000_0005);
 
         // ========================================================
         // TEST 2: MUL_BF16 + MAC_BF16 (FMA)
@@ -297,7 +459,7 @@ module tb_gpu_core3;
         //   Store to DMEM[12]
         //   Expected: DMEM[12] = 64'h4140_4140_4140_4140
         // ========================================================
-        $display("\n=== TEST 2: MUL_BF16 + MAC_BF16 / FMA  ===");
+        $display("\n=== TEST 2: MUL_BF16 + MAC_BF16 / FMA (3 NOPs after each FMA) ===");
 
         // Pre-load bf16 input vectors
         dmem_write(8'd10, 64'h4000_4000_4000_4000);   // 2.0 × 4 lanes
@@ -309,20 +471,112 @@ module tb_gpu_core3;
         dmem_check(8'd12, 64'h4140_4140_4140_4140);
 
         // ========================================================
-        // TEST 3: jump
-   
+        // TEST 3: jUMP
+        // Instruction wants to write to Reg1,2,3,4,5,6 Jump to start from 3
+        // So only regs after 3 could be write
+        // ST to dmem to check is correct
+        // MODIFIED VERSION:
+        // JUMP should have 3 delay slot, so the reg1 is also being written, because of stay in the slot
         // ========================================================
-        $display("\n=== TEST 3: BPR/BR  ===");
+        $display("\n=== TEST 3:jump===");
 
         // Pre-load bf16 input vectors
-        dmem_write(8'd10, 64'h4000_4000_4000_4000);   // 2.0 × 4 lanes
-        dmem_write(8'd11, 64'h4040_4040_4040_4040);   // 3.0 × 4 lanes
+        dmem_write(8'd1, 64'h0);
+        dmem_write(8'd2, 64'h0);
+        dmem_write(8'd3, 64'h0);
+        dmem_write(8'd4, 64'h0);
+        dmem_write(8'd5, 64'h0);
+        dmem_write(8'd6, 64'h0);
 
-        load_test=3;
+        load_test3;
         reset_pc;
         run_until_done(300);
-        dmem_check(8'd12, 64'h4140_4140_4140_4140);
+        dmem_check(8'd1, 64'h1);
+        dmem_check(8'd2, 64'h0);
+        dmem_check(8'd3, 64'h1);
+        dmem_check(8'd4, 64'h1);
+        dmem_check(8'd5, 64'h1);
+        dmem_check(8'd6, 64'h1);
 
+        // ========================================================
+        // TEST 4: CONditional jump
+        // R5<R6 NO jump
+        // ========================================================
+        $stop;
+        $display("\n=== TEST 4: CONDITIONAL JUMP (BPR) ===");
+
+        // Pre-load bf16 input vectors
+        dmem_write(8'd1, 64'h0);
+        dmem_write(8'd2, 64'h0);
+        dmem_write(8'd3, 64'h0);
+        dmem_write(8'd4, 64'h0);
+        dmem_write(8'd5, 64'h0);
+        dmem_write(8'd6, 64'h0);
+
+        load_test4;
+        reset_pc;
+        run_until_done(300);
+        dmem_check(8'd1, 64'h1);
+        dmem_check(8'd2, 64'h1);
+        dmem_check(8'd3, 64'h1);
+        dmem_check(8'd4, 64'h1);
+        dmem_check(8'd5, 64'h1);
+        dmem_check(8'd6, 64'h1);
+
+        // ========================================================
+        // TEST 5: LOAD PARAM
+        // ========================================================
+
+        $display("\n=== TEST 5: LOADPARAM ===");
+
+        // Pre-load bf16 input vectors
+
+        dmem_write(8'd1, 64'h0);
+        dmem_write(8'd2, 64'h0);
+        dmem_write(8'd3, 64'h0);
+        dmem_write(8'd4, 64'h0);
+        dmem_write(8'd5, 64'h0);
+        dmem_write(8'd6, 64'h0);
+
+
+        param_write(3'd0,64'd10);
+        param_write(3'd1,64'd20);
+        param_write(3'd2,64'd30);
+
+        load_test5;
+        reset_pc;
+        run_until_done(300);
+
+        dmem_check(8'd10, 64'd10);
+        dmem_check(8'd20, 64'd20);
+        dmem_check(8'd30, 64'd30);
+        dmem_check(8'd4, 64'h1);
+        dmem_check(8'd5, 64'h1);
+        dmem_check(8'd6, 64'h1);
+
+        // ========================================================
+        // TEST 6: STW
+        // ========================================================
+        $display("\n=== TEST 6: STW ===");
+
+        // Pre-load bf16 input vectors
+
+        dmem_write(8'd10, 64'h0);
+        dmem_write(8'd20, 64'h0);
+        dmem_write(8'd30, 64'h0);
+        dmem_write(8'd40, 64'h0);
+        dmem_write(8'd50, 64'h0);
+
+        load_test6;
+        reset_pc;
+        run_until_done(300);
+
+        dmem_check(8'd10, 64'd10);
+        dmem_check(8'd20, 64'd20);
+        dmem_check(8'd30, 64'd30);
+        dmem_check(8'd40, 64'd40);
+        dmem_check(8'd50, 64'd50);
+        
 
         $display("\n=== ALL TESTS COMPLETE ===");
         $finish;
