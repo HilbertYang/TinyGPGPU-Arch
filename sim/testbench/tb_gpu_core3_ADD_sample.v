@@ -1,25 +1,11 @@
-// tb_gpu_core3.v
+// tb_gpu_core3_ADD_sample.v
 // Testbench for gpu_core3 (no-flush, no-forwarding pipeline)
 // NOP policy: 3 NOPs after every write instruction
 //
 // ISA:  {op[4:0], rd[3:0], rs1[3:0], rs2[3:0], imm15[14:0]}
 //       [31:27]=OP  [26:23]=RD  [22:19]=RS1  [18:15]=RS2  [14:0]=IMM15
 //
-// ── TEST 1: ADD_I16 ───────────────────────────────────────────────
-//   MOV R1, 7   / NOP×3
-//   MOV R2, 5   / NOP×3
-//   ADD_I16 R3, R1, R2  / NOP×3   → R3 = {0,0,0,12}
-//   ST64 R3, R0   / NOP×3 / RET
-//   Expected: DMEM[0] = 64'h0000_0000_0000_000C
-//
-// ── TEST 2: MUL_BF16 + MAC_BF16 (FMA) ───────────────────────────
-//   Pre-load DMEM[10] = 64'h4000_4000_4000_4000 (2.0 bf16 ×4)
-//           DMEM[11] = 64'h4040_4040_4040_4040 (3.0 bf16 ×4)
-//   MUL_BF16 R3, R1, R2  / NOP×3   → R3 = {6.0 bf16} = 0x40C0×4
-//   MAC_BF16 R3, R1, R2  / NOP×3   → R3 = R1*R2+R3 = {12.0} = 0x4140×4
-//   ST64 R3, R7   / NOP×3 / RET
-//   Expected: DMEM[12] = 64'h4140_4140_4140_4140
-//
+
 `timescale 1ns/1ps
 
 module tb_gpu_core3;
