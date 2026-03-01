@@ -8,8 +8,8 @@
     5   NOP
     6   NOP
 Loop:
-    7   SETP_GE     0       R5      R4      0       //compare
-    8   BPR         0       0       0       RET     //if thread_id > n end the kernel
+    7   SETP_GE     0       R5      R4      0       //if R5 >=n
+    8   BPR         0       0       0       RET     //if >= go RET
         
     9   LD64        R10     R1      0       0      // R10 = MEM[R1]
     10  LD64        R11     R2      0       0      // R11 = MEM[R2]
