@@ -18,6 +18,26 @@ my $GPU_DMEM_RDATA_LO_REG = $GPU_BASE + 0x2c;
 my $GPU_DMEM_RDATA_HI_REG = $GPU_BASE + 0x30;
 my $GPU_DONE              = $GPU_BASE + 0x34;
 
+
+# // Name: gpu (GPU)
+# // Description: Registers for GPU control + IMEM/DMEM programming + Param programming
+# // File: projects/lab5/include/gpu.xml
+# #define GPU_CTRL_REG            0x2000000
+# #define GPU_IMEM_ADDR_REG       0x2000004
+# #define GPU_IMEM_WDATA_REG      0x2000008
+# #define GPU_DMEM_ADDR_REG       0x200000c
+# #define GPU_DMEM_WDATA_LO_REG   0x2000010
+# #define GPU_DMEM_WDATA_HI_REG   0x2000014
+# #define GPU_PARAM_ADDR_REG      0x2000018
+# #define GPU_PARAM_DATA_LO_REG   0x200001c
+# #define GPU_PARAM_DATA_HI_REG   0x2000020
+# #define GPU_PC_DBG_REG          0x2000024
+# #define GPU_IF_INSTR_DBG_REG    0x2000028
+# #define GPU_DMEM_RDATA_LO_REG   0x200002c
+# #define GPU_DMEM_RDATA_HI_REG   0x2000030
+# #define GPU_DONE_REG            0x2000034
+
+
 ##########################################################################
 ####################### READ/WRITE HELPERS ###############################
 ###########################################################################
