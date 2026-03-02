@@ -28,7 +28,7 @@ module tb_gpu_core3;
     // Signals
     // -------------------------------------------------------
     reg        clk, rst_n;
-    reg        run, step, pc_reset_pulse;
+    reg        run, step, pc_reset;
     wire       done;
 
     reg        param_wr_en;
@@ -55,7 +55,7 @@ module tb_gpu_core3;
         .rst_n           (rst_n),
         .run             (run),
         .step            (step),
-        .pc_reset_pulse  (pc_reset_pulse),
+        .pc_reset  (pc_reset),
         .done            (done),
         .param_wr_en     (param_wr_en),
         .param_wr_addr   (param_wr_addr),
@@ -182,9 +182,9 @@ module tb_gpu_core3;
     // Reset PC and flush pipeline stages
     task reset_pc;
         begin
-            @(negedge clk); pc_reset_pulse = 1'b1;
+            @(negedge clk); pc_reset = 1'b1;
             @(posedge clk); #1;
-            @(negedge clk); pc_reset_pulse = 1'b0;
+            @(negedge clk); pc_reset = 1'b0;
             repeat(2) @(posedge clk);
         end
     endtask
@@ -273,7 +273,7 @@ module tb_gpu_core3;
     // Main
     // -------------------------------------------------------
     initial begin
-        rst_n          = 0;  run = 0;  step = 0;  pc_reset_pulse = 0;
+        rst_n          = 0;  run = 0;  step = 0;  pc_reset = 0;
         param_wr_en    = 0;  param_wr_addr = 0;  param_wr_data = 0;
         imem_prog_we   = 0;  imem_prog_addr = 0; imem_prog_wdata = 0;
         dmem_prog_en   = 0;  dmem_prog_we = 0;

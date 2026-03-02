@@ -43,7 +43,7 @@ module gpu_core (
 
     input  wire        run,           
     input  wire        step,          
-    input  wire        pc_reset_pulse, 
+    input  wire        pc_reset, 
     output wire        done,
 
    //param_interface
@@ -94,7 +94,7 @@ module gpu_core (
     reg step_d;
 
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || pc_reset_pulse) begin
+        if (!rst_n || pc_reset) begin
             step_d <= 1'b0;
         end else begin       
             step_d <= step;
@@ -111,7 +111,7 @@ module gpu_core (
     
     //pc update
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || pc_reset_pulse) begin
+        if (!rst_n || pc_reset) begin
         pc <= 9'd0;
         end else if (branch_taken) begin
         pc <= branch_target;
@@ -159,7 +159,7 @@ module gpu_core (
     reg [31:0] ifid_instr;
 
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || pc_reset_pulse) begin
+        if (!rst_n || pc_reset) begin
             ifid_instr <= 32'd0;
         end else if(advance) begin
             ifid_instr <= imem_dout;
@@ -278,7 +278,7 @@ module gpu_core (
     reg        idex_is_ret;
 
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || pc_reset_pulse) begin  
+        if (!rst_n || pc_reset) begin  
             idex_op         <= 5'd0;
             idex_rs3_addr   <= 4'd0;
             idex_imm15      <= 15'd0;
@@ -358,7 +358,7 @@ module gpu_core (
     // Predicate
     reg pred_reg;
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || pc_reset_pulse)
+        if (!rst_n || pc_reset)
             pred_reg <= 1'b0;
         else if (idex_pred_wr_en)
             pred_reg <= alu_pred;
@@ -386,7 +386,7 @@ module gpu_core (
     wire [63:0] ex_imm_or_param = idex_use_imm ? ex_imm64 : idex_param_val;
 
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || pc_reset_pulse) begin
+        if (!rst_n || pc_reset) begin
             exmem_rs3_addr     <= 4'd0;
             exmem_alu_y        <= 64'd0;
             exmem_tc_y         <= 64'd0;
@@ -477,7 +477,7 @@ module gpu_core (
     reg        memwb_is_ret;
 
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || pc_reset_pulse) begin
+        if (!rst_n || pc_reset) begin
             memwb_rs3_addr      <= 4'd0;
             memwb_alu_y        <= 64'd0;
             memwb_tc_y         <= 64'd0;
