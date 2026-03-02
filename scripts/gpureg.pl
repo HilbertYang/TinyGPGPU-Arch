@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 use strict;
 my $GPU_BASE = 0x2000240;
 #SW regs
