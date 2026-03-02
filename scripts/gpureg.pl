@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 use strict;
-my $GPU_BASE = 0x2000240;
+my $GPU_BASE = 0x2000000;
 #SW regs
 my $GPU_CTRL_REG          = $GPU_BASE + 0x0;
 my $GPU_IMEM_ADDR_REG     = $GPU_BASE + 0x4;
