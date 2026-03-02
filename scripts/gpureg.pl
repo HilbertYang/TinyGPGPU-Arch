@@ -163,6 +163,9 @@ sub cmd_param_write {
   ctrl_pulse_bit(6); # imem_we= 0->1->0
 }
 
+sub cmd_done_check {
+  print "DONE: ", regread($GPU_DONE), "\n";
+}
 #=======================MAIN===========================
 my $numargs = $#ARGV + 1;
 if ($numargs < 1) {
@@ -203,6 +206,9 @@ elsif ($cmd eq "allregs") {
 elsif ($cmd eq "param_write") {
   die "param_write <addr> <hi> <lo>\n" if $numargs < 4;
   cmd_param_write($ARGV[1], $ARGV[2], $ARGV[3]);
+}
+elsif ($cmd eq "done_check") {
+  cmd_done_check();
 }
 else {
   print "Unrecognized command $cmd\n";
