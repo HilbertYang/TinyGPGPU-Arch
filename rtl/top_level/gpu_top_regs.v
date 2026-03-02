@@ -125,8 +125,8 @@ module gpu_top_regs #(
   //==========================
   generic_regs #(
     .UDP_REG_SRC_WIDTH (UDP_REG_SRC_WIDTH),
-    .TAG               (`PIPE_BLOCK_ADDR),// Only the address with this tag will be decoded and sent to this module
-    .REG_ADDR_WIDTH    (`PIPE_REG_ADDR_WIDTH),// Only the lower REG_ADDR_WIDTH bits of the address will be decoded
+    .TAG               (`GPU_BLOCK_ADDR),// Only the address with this tag will be decoded and sent to this module
+    .REG_ADDR_WIDTH    (`GPU_REG_ADDR_WIDTH),// Only the lower REG_ADDR_WIDTH bits of the address will be decoded
     .NUM_COUNTERS      (0),
     .NUM_SOFTWARE_REGS (9),
     .NUM_HARDWARE_REGS (5)
