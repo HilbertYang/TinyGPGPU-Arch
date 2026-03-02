@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-module pipeline_top_regs #(
+module gpu_top_regs #(
   parameter DATA_WIDTH        = 64,
   parameter CTRL_WIDTH        = DATA_WIDTH/8,
   parameter UDP_REG_SRC_WIDTH = 2
@@ -54,7 +54,7 @@ module pipeline_top_regs #(
   wire        done;                                                      //new
   wire [8:0]  pc_dbg;
   wire [31:0] if_instr_dbg;
-  
+
   wire [31:0] hw_pc_dbg        = {23'h0, pc_dbg}; 
   wire [31:0] hw_if_instr      = if_instr_dbg;
   wire [31:0] hw_dmem_rdata_lo = dmem_prog_rdata[31:0];
