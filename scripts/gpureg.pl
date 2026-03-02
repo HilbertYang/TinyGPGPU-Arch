@@ -53,7 +53,7 @@ sub usage {
   print "    dmem_read <addr>                            read D-mem 64b via portB\n";
   print "    dbg                                         print pc + if_instr\n";
   print "    allregs                                     dump all hw regs\n";
-  print "    param_write <addr> <hi> <lo>                program I-mem 64b\n";
+  print "    param_write <addr> <hi> <lo>                program param_write 64b\n";
 }
 
 
