@@ -82,11 +82,9 @@ module gpu_top_regs #(
           sw_ctrl} = software_regs_bus;
 
 //=============================PIPELINE=============================
-    wire rst_n = ~reset;
-
     gpu_core u_gpu_core (
         .clk             (clk),
-        .rst_n           (rst_n),
+        .reset           (reset),
 
         .run             (run_level),
         .step            (step),

@@ -12,7 +12,7 @@
 
 module regfile(
     input  wire        clk,
-    input  wire        rst_n,
+    input  wire        reset,
     // Read port A
     input  wire [3:0]  rs1_addr,
     output wire [63:0] rs1_data,
@@ -37,8 +37,8 @@ module regfile(
     wire fwd3 = wr_en && (wr_addr == rs3_addr) && (rs3_addr != 4'd0);
 
     integer i;
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
+    always @(posedge clk) begin
+        if (reset) begin
             for (i = 0; i < 16; i = i + 1)
                 regs[i] <= 64'd0;
         end else if (wr_en && wr_addr != 4'd0) begin

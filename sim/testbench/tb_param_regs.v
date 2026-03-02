@@ -3,7 +3,7 @@
 
 module tb_param_regs;
 
-    reg        clk, rst_n;
+    reg        clk, reset;
     reg        wr_en;
     reg  [2:0] wr_addr;
     reg [63:0] wr_data;
@@ -14,7 +14,7 @@ module tb_param_regs;
     integer fail_cnt = 0;
 
     param_regs dut(
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .reset(reset),
         .wr_en(wr_en), .wr_addr(wr_addr), .wr_data(wr_data),
         .rd_addr(rd_addr), .rd_data(rd_data)
     );
@@ -53,7 +53,7 @@ module tb_param_regs;
     reg [63:0] expected [0:7];
 
     initial begin
-        clk = 0; rst_n = 0;
+        clk = 0; reset = 1;
         wr_en = 0; wr_addr = 0; wr_data = 0; rd_addr = 0;
         for (i = 0; i < 8; i = i + 1) expected[i] = 64'd0;
 
@@ -61,7 +61,7 @@ module tb_param_regs;
 
         // ---- 1. Reset ----
         $display("\n[1] Reset: all params must read 0");
-        @(posedge clk); #1; rst_n = 1;
+        @(posedge clk); #1; reset = 0;
         for (i = 0; i < 8; i = i + 1) begin
             rd_addr = i; #1;
             check64(rd_data, 64'd0, "reset zero");
@@ -170,8 +170,8 @@ module tb_param_regs;
 
         // ---- 9. Reset clears all ----
         $display("\n[9] Reset clears all params");
-        rst_n = 0;
-        @(posedge clk); #1; rst_n = 1;
+        reset = 1;
+        @(posedge clk); #1; reset = 0;
         for (i = 0; i < 8; i = i + 1) begin
             rd_addr = i; #1;
             check64(rd_data, 64'd0, "post-reset zero");

@@ -11,7 +11,7 @@
 
 module tb_gpu_top;
 
-    reg         clk, rst_n, start;
+    reg         clk, reset, start;
     wire        done;
 
     reg         param_wr_en;
@@ -34,7 +34,7 @@ module tb_gpu_top;
     wire [63:0] dmem_prog_dout;
 
     gpu_top DUT (
-        .clk(clk), .rst_n(rst_n), .start(start), .done(done),
+        .clk(clk), .reset(reset), .start(start), .done(done),
         .param_wr_en(param_wr_en), .param_wr_addr(param_wr_addr), .param_wr_data(param_wr_data),
         .imem_prog_en(imem_prog_en), .imem_prog_addr(imem_prog_addr),
         .imem_prog_din(imem_prog_din), .imem_prog_dout(imem_prog_dout),
@@ -195,14 +195,14 @@ module tb_gpu_top;
     // Main
     //=========================================================
     initial begin
-        rst_n = 0; start = 0;
+        reset = 1; start = 0;
         param_wr_en = 0; param_wr_addr = 0; param_wr_data = 0;
         imem_prog_en = 0; imem_prog_addr = 0; imem_prog_din = 0;
         dmem_host_en = 0; dmem_host_we = 0; dmem_host_addr = 0; dmem_host_din = 0;
         dmem_prog_en = 0; dmem_prog_we = 0; dmem_prog_addr = 0; dmem_prog_din = 0;
 
         repeat(4) @(posedge clk);
-        rst_n = 1'b1;
+        reset = 1'b0;
         repeat(2) @(posedge clk);
 
         // === TEST 1: IMEM 写入 ===

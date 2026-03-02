@@ -11,7 +11,7 @@
 
 module param_regs(
     input  wire        clk,
-    input  wire        rst_n,
+    input  wire        reset,
     // Write interface (from host/ARM before kernel launch)
     input  wire        wr_en,
     input  wire [2:0]  wr_addr,   // param index 0-7
@@ -27,8 +27,8 @@ module param_regs(
     wire fwd = wr_en && (wr_addr == rd_addr);
 
     integer i;
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
+    always @(posedge clk) begin
+        if (reset) begin
             for (i = 0; i < 8; i = i + 1)
                 params[i] <= 64'd0;
         end else if (wr_en) begin

@@ -13,7 +13,7 @@ module tb_gpu_core3;
     // -------------------------------------------------------
     // Signals
     // -------------------------------------------------------
-    reg        clk, rst_n;
+    reg        clk, reset;
     reg        run, step, pc_reset;
     wire       done;
 
@@ -38,7 +38,7 @@ module tb_gpu_core3;
     // -------------------------------------------------------
     gpu_core dut (
         .clk             (clk),
-        .rst_n           (rst_n),
+        .reset           (reset),
         .run             (run),
         .step            (step),
         .pc_reset  (pc_reset),
@@ -234,14 +234,14 @@ module tb_gpu_core3;
     // Main
     // -------------------------------------------------------
     initial begin
-        rst_n          = 0;  run = 0;  step = 0;  pc_reset = 0;
+        reset          = 1;  run = 0;  step = 0;  pc_reset = 0;
         param_wr_en    = 0;  param_wr_addr = 0;  param_wr_data = 0;
         imem_prog_we   = 0;  imem_prog_addr = 0; imem_prog_wdata = 0;
         dmem_prog_en   = 0;  dmem_prog_we = 0;
         dmem_prog_addr = 0;  dmem_prog_wdata = 0;
 
         repeat(5) @(posedge clk);
-        rst_n = 1;
+        reset = 0;
         repeat(2) @(posedge clk);
 
         // ========================================================

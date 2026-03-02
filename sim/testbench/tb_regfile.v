@@ -17,7 +17,7 @@
 
 module tb_regfile;
 
-    reg        clk, rst_n;
+    reg        clk, reset;
     reg  [3:0] rs1_addr, rs2_addr, rs3_addr;
     wire [63:0] rs1_data, rs2_data, rs3_data;
     reg        wr_en;
@@ -28,7 +28,7 @@ module tb_regfile;
     integer fail_cnt = 0;
 
     regfile dut(
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .reset(reset),
         .rs1_addr(rs1_addr), .rs1_data(rs1_data),
         .rs2_addr(rs2_addr), .rs2_data(rs2_data),
         .rs3_addr(rs3_addr), .rs3_data(rs3_data),
@@ -67,7 +67,7 @@ module tb_regfile;
     integer i;
 
     initial begin
-        clk = 0; rst_n = 0;
+        clk = 0; reset = 1;
         wr_en = 0; wr_addr = 0; wr_data = 0;
         rs1_addr = 0; rs2_addr = 0; rs3_addr = 0;
 
@@ -76,7 +76,7 @@ module tb_regfile;
 
         // ---- 1. Reset ----
         $display("\n[1] Reset: all regs must read 0");
-        @(posedge clk); #1; rst_n = 1;
+        @(posedge clk); #1; reset = 0;
         for (i = 0; i < 16; i = i + 1) begin
             rs1_addr = i; #1;
             check64(rs1_data, 64'd0, "reset zero");
@@ -189,8 +189,8 @@ module tb_regfile;
 
         // ---- 9. Reset clears all after writes ----
         $display("\n[9] Reset clears all registers");
-        rst_n = 0;
-        @(posedge clk); #1; rst_n = 1;
+        reset = 1;
+        @(posedge clk); #1; reset = 0;
         for (i = 0; i < 16; i = i + 1) begin
             rs1_addr = i; #1;
             check64(rs1_data, 64'd0, "post-reset zero");

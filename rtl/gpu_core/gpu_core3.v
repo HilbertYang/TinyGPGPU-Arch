@@ -39,7 +39,7 @@
 `timescale 1ns/1ps
 module gpu_core (
     input  wire        clk,
-    input  wire        rst_n,
+    input  wire        reset,
 
     input  wire        run,           
     input  wire        step,          
@@ -93,10 +93,8 @@ module gpu_core (
     //==========================================================
     reg step_d;
 
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            step_d <= 1'b0;
-        end else if (pc_reset) begin
+    always @(posedge clk) begin
+        if (reset || pc_reset) begin
             step_d <= 1'b0;
         end else begin       
             step_d <= step;
@@ -112,10 +110,8 @@ module gpu_core (
     wire [8:0]  branch_target;
     
     //pc update
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            pc <= 9'd0;
-        end else if (pc_reset)begin
+    always @(posedge clk) begin
+        if (reset || pc_reset) begin
             pc <= 9'd0;
         end else if (branch_taken) begin
             pc <= branch_target;
@@ -163,10 +159,8 @@ module gpu_core (
     // --- IF/ID Pipeline Register ---
     reg [31:0] ifid_instr;
 
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            ifid_instr <= 32'd0;
-        end else if (pc_reset) begin
+    always @(posedge clk) begin
+        if (reset || pc_reset) begin
             ifid_instr <= 32'd0;
         end else if(advance) begin
             ifid_instr <= imem_dout;
@@ -239,7 +233,7 @@ module gpu_core (
 
     regfile RF(
         .clk      (clk),
-        .rst_n    (rst_n),
+        .reset    (reset),
         .rs1_addr (id_rs1_addr),
         .rs1_data (id_rs1_data),
         .rs2_addr (id_rs2_addr),
@@ -256,7 +250,7 @@ module gpu_core (
 
     param_regs PARAMS(
         .clk      (clk),
-        .rst_n    (rst_n),
+        .reset    (reset),
         .wr_en    (param_wr_en),
         .wr_addr  (param_wr_addr),
         .wr_data  (param_wr_data),
@@ -284,28 +278,8 @@ module gpu_core (
     reg        idex_is_branch;
     reg        idex_is_ret;
 
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            idex_op         <= 5'd0;
-            idex_rs3_addr   <= 4'd0;
-            idex_imm15      <= 15'd0;
-            idex_rs1_val    <= 64'd0;
-            idex_rs2_val    <= 64'd0;
-            idex_rs3_val    <= 64'd0;
-            idex_param_val  <= 64'd0;
-            idex_op_alu     <= 5'd0;
-            idex_use_tc     <= 1'b0;
-            idex_op_tc      <= 1'b0;
-            idex_use_imm    <= 1'b0;
-            idex_mem_rd_en  <= 1'b0;
-            idex_mem_wr_en  <= 1'b0;
-            idex_rf_wr_en   <= 1'b0;
-            idex_wb_sel     <= 2'd0;
-            idex_pred_wr_en <= 1'b0;
-            idex_is_bpr     <= 1'b0;
-            idex_is_branch  <= 1'b0;
-            idex_is_ret     <= 1'b0;
-        end else if (pc_reset) begin
+    always @(posedge clk) begin
+        if (reset || pc_reset) begin
             idex_op         <= 5'd0;
             idex_rs3_addr   <= 4'd0;
             idex_imm15      <= 15'd0;
@@ -384,10 +358,8 @@ module gpu_core (
 
     // Predicate
     reg pred_reg;
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n)
-            pred_reg <= 1'b0;
-        else if (pc_reset)
+    always @(posedge clk) begin
+        if (reset || pc_reset)
             pred_reg <= 1'b0;
         else if (idex_pred_wr_en)
             pred_reg <= alu_pred;
@@ -414,21 +386,8 @@ module gpu_core (
     // IMM/PARAM mux: MOV uses sign-ext imm15, LD_PARAM uses param value
     wire [63:0] ex_imm_or_param = idex_use_imm ? ex_imm64 : idex_param_val;
 
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            exmem_rs3_addr     <= 4'd0;
-            exmem_alu_y        <= 64'd0;
-            exmem_tc_y         <= 64'd0;
-            exmem_rs3_val      <= 64'd0;
-            exmem_imm_or_param <= 64'd0;
-            exmem_pred         <= 1'b0;
-            exmem_mem_rd_en    <= 1'b0;
-            exmem_mem_wr_en    <= 1'b0;
-            exmem_rf_wr_en     <= 1'b0;
-            exmem_wb_sel       <= 2'd0;
-            exmem_pred_wr_en   <= 1'b0;
-            exmem_is_ret       <= 1'b0;
-        end else if (pc_reset) begin
+    always @(posedge clk) begin
+        if (reset || pc_reset) begin
             exmem_rs3_addr     <= 4'd0;
             exmem_alu_y        <= 64'd0;
             exmem_tc_y         <= 64'd0;
@@ -518,16 +477,8 @@ module gpu_core (
     reg [1:0]  memwb_wb_sel;
     
 
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            memwb_rs3_addr      <= 4'd0;
-            memwb_alu_y        <= 64'd0;
-            memwb_tc_y         <= 64'd0;
-            memwb_imm_or_param <= 64'd0;
-            memwb_rf_wr_en     <= 1'b0;
-            memwb_wb_sel       <= 2'd0;
-            memwb_is_ret <= 1'b0;
-        end else if (pc_reset) begin
+    always @(posedge clk) begin
+        if (reset || pc_reset) begin
             memwb_rs3_addr      <= 4'd0;
             memwb_alu_y        <= 64'd0;
             memwb_tc_y         <= 64'd0;

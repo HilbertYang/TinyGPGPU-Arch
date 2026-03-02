@@ -4,7 +4,7 @@
 
 module gpu_core(
     input  wire        clk,
-    input  wire        rst_n,
+    input  wire        reset,
     input  wire        start,
     output reg         done,
 
@@ -35,8 +35,8 @@ module gpu_core(
 
     // Minimal FSM: assert done 4 cycles after start
     reg [2:0] cnt;
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
+    always @(posedge clk) begin
+        if (reset) begin
             done <= 1'b0;
             cnt  <= 3'd0;
         end else if (done) begin
