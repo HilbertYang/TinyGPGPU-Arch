@@ -387,7 +387,11 @@ module user_data_path
       .reg_rd_wr_L_out(gpu_reg_rd_wr_L),
       .reg_addr_out   (gpu_reg_addr),
       .reg_data_out   (gpu_reg_data),
-      .reg_src_out    (gpu_reg_src)
+      .reg_src_out    (gpu_reg_src),
+
+      .pc_dbg         (),
+      .if_instr_dbg   ()
+
     );
 
 

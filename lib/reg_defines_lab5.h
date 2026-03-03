@@ -1,13 +1,13 @@
 /********************************************************
  *
  * C register defines file
- * Project: Reference router (lab5)
+ * Project: Reference router (lab7)
  * Description: Reference IPv4 router
  *
  ********************************************************/
 
-#ifndef _REG_DEFINES_LAB5_
-#define _REG_DEFINES_LAB5_
+#ifndef _REG_DEFINES_LAB7_
+#define _REG_DEFINES_LAB7_
 
 /* ========= Version Information ========= */
 
@@ -15,7 +15,7 @@
 #define DEVICE_MAJOR       1
 #define DEVICE_MINOR       0
 #define DEVICE_REVISION    0
-#define DEVICE_PROJ_DIR    "lab5"
+#define DEVICE_PROJ_DIR    "lab7"
 #define DEVICE_PROJ_NAME   "Reference router"
 #define DEVICE_PROJ_DESC   "Reference IPv4 router"
 
@@ -635,7 +635,7 @@
 
 // Name: gpu (GPU)
 // Description: Registers for GPU control + IMEM/DMEM programming + Param programming
-// File: projects/lab5/include/gpu.xml
+// File: projects/lab7/include/gpu.xml
 #define GPU_CTRL_REG            0x2000000
 #define GPU_IMEM_ADDR_REG       0x2000004
 #define GPU_IMEM_WDATA_REG      0x2000008
@@ -650,10 +650,11 @@
 #define GPU_DMEM_RDATA_LO_REG   0x200002c
 #define GPU_DMEM_RDATA_HI_REG   0x2000030
 #define GPU_DONE_REG            0x2000034
+#define GPU_SW_CTRL_REG         0x2000038
 
 // Name: ids (IDS)
 // Description: Registers for IDS
-// File: projects/lab5/include/ids.xml
+// File: projects/lab7/include/ids.xml
 #define IDS_PATTERN_HIGH_REG   0x2000040
 #define IDS_PATTERN_LOW_REG    0x2000044
 #define IDS_IDS_CMD_REG        0x2000048

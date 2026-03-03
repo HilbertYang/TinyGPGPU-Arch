@@ -19,7 +19,11 @@ module gpu_top_regs #(
   output wire                         reg_rd_wr_L_out,
   output wire [`UDP_REG_ADDR_WIDTH-1:0]   reg_addr_out,
   output wire [`CPCI_NF2_DATA_WIDTH-1:0]  reg_data_out,
-  output wire [UDP_REG_SRC_WIDTH-1:0]     reg_src_out
+  output wire [UDP_REG_SRC_WIDTH-1:0]     reg_src_out,
+
+  output wire [8:0]                   pc_dbg,
+  output wire [31:0]                  if_instr_dbg
+
 );
 
 
@@ -52,8 +56,7 @@ module gpu_top_regs #(
 //=============================HW REGS========================================
   wire [63:0] dmem_prog_rdata;
   wire        done;                                                      //new
-  wire [8:0]  pc_dbg;
-  wire [31:0] if_instr_dbg;
+
 
   wire [31:0] hw_pc_dbg        = {23'h0, pc_dbg}; 
   wire [31:0] hw_if_instr      = if_instr_dbg;
