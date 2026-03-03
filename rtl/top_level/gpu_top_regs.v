@@ -57,8 +57,13 @@ module gpu_top_regs #(
   wire [63:0] dmem_prog_rdata;
   wire        done;                                                      //new
 
-
-  wire [31:0] hw_pc_dbg        = {23'h0, pc_dbg}; 
+  reg [31:0] hb;
+  always @(posedge clk) begin
+    if (reset) hb <= 0;
+    else hb <= hb + 1;
+  end
+  wire [31:0] hw_pc_dbg = hb;
+  // wire [31:0] hw_pc_dbg        = {23'h0, pc_dbg}; 
   wire [31:0] hw_if_instr      = if_instr_dbg;
   wire [31:0] hw_dmem_rdata_lo = dmem_prog_rdata[31:0];
   wire [31:0] hw_dmem_rdata_hi = dmem_prog_rdata[63:32];
@@ -68,21 +73,30 @@ module gpu_top_regs #(
 
 
 //=============================PACK BUS============================================
-  assign {hw_done,
-          hw_dmem_rdata_hi,
-          hw_dmem_rdata_lo,
-          hw_if_instr,
-          hw_pc_dbg} = hardware_regs_bus;
 
-  assign {sw_param_data_hi,
-          sw_param_data_lo,
-          sw_param_addr,
-          sw_dmem_wdata_hi,
-          sw_dmem_wdata_lo,
-          sw_dmem_addr,
-          sw_imem_wdata,
-          sw_imem_addr,
-          sw_ctrl} = software_regs_bus;
+  assign hardware_regs_bus = {hw_done,
+                              hw_dmem_rdata_hi,
+                              hw_dmem_rdata_lo,
+                              hw_if_instr,
+                              hw_pc_dbg};
+  // assign {sw_param_data_hi,
+  //         sw_param_data_lo,
+  //         sw_param_addr,
+  //         sw_dmem_wdata_hi,
+  //         sw_dmem_wdata_lo,
+  //         sw_dmem_addr,
+  //         sw_imem_wdata,
+  //         sw_imem_addr,
+  //         sw_ctrl} = software_regs_bus;
+  assign sw_ctrl            = software_regs_bus[ 31:  0];
+  assign sw_imem_addr       = software_regs_bus[ 63: 32];
+  assign sw_imem_wdata      = software_regs_bus[ 95: 64];
+  assign sw_dmem_addr       = software_regs_bus[127: 96];
+  assign sw_dmem_wdata_lo   = software_regs_bus[159:128];
+  assign sw_dmem_wdata_hi   = software_regs_bus[191:160];
+  assign sw_param_addr      = software_regs_bus[223:192];
+  assign sw_param_data_lo   = software_regs_bus[255:224];
+  assign sw_param_data_hi   = software_regs_bus[287:256];
 
 //=============================PIPELINE=============================
     gpu_core u_gpu_core (
