@@ -25,8 +25,8 @@
 //   ADD64    = 5'h04  RD = RS1 + RS2 (64-bit)
 //   ADDI64   = 5'h05  RD = RS1 + sign_ext(imm15)
 //   SETP_GE  = 5'h06  PRED = (RS1[31:0] >= RS2[31:0])
-//   SHIFTLV  = 5'h07  RD = RS1  <<< imm15;
-//   SHIFTRV  = 5'h08. RD = RS1  >>> imm15;
+//   SHIFTLV  = 5'h07  RD = RS1  <<< imm15; //NO USE now is RD = RS1!
+//   SHIFTRV  = 5'h08. RD = RS1  >>> imm15; //NO USE now is RD = RS1!
 //   MAC_BF16 = 5'h09  RD[4xbf16] = RS1 * RS2 + RS3(=RD)
 //   MUL_BF16 = 5'h0a  RD[4xbf16] = RS1 * RS2
 //   LD64     = 5'h10  RD = DMEM[RS1 + imm15]

@@ -29,10 +29,9 @@ module alu_i16x4(
     localparam OP_SUB_I16  = 5'h01;
     localparam OP_MAX_I16  = 5'h02;
     localparam OP_ADD64    = 5'h03;
-    localparam OP_ADDI64   = 5'h04;
-    localparam OP_SETP_GE  = 5'h05;
-    localparam OP_SHIFTLV  = 5'h06;
-    localparam OP_SHIFTRV  = 5'h07;
+    localparam OP_SETP_GE  = 5'h04;
+    localparam OP_SHIFTLV  = 5'h05;
+    localparam OP_SHIFTRV  = 5'h06;
 
     reg signed [15:0] r0, r1, r2, r3;
 
@@ -70,21 +69,17 @@ module alu_i16x4(
                 y = a + b;
             end
 
-            OP_ADDI64: begin
-                y = a + b;
-            end
-
             OP_SETP_GE: begin
                 pred_out = ($signed(a[31:0]) >= $signed(b[31:0]));
                 y = 64'd0;
             end
 
             OP_SHIFTLV: begin
-                y = a <<< b[5:0];
+                y = a;
             end
 
             OP_SHIFTRV: begin
-                y = a >>> b[5:0];
+                y = a;
             end
 
             default: begin

@@ -13,36 +13,37 @@ module tensor_core_bf16x4(
 
     wire [15:0] y0, y1, y2, y3;
 
-    pe_bf16_comb PE0 (
-        .op_mac (op_mac),
-        .A      (A[15:0]),
-        .B      (B[15:0]),
-        .C      (C[15:0]),
-        .Y      (y0)
+    tensor16 PE0 (
+        .op_mac      (op_mac),
+        .fb16_A      (A[15:0]),
+        .fb16_B      (B[15:0]),
+        .fb16_C      (C[15:0]),
+        .result      (y0)
     );
 
-    pe_bf16_comb PE1 (
+       
+    tensor16 PE1 (
         .op_mac (op_mac),
-        .A      (A[31:16]),
-        .B      (B[31:16]),
-        .C      (C[31:16]),
-        .Y      (y1)
+        .fb16_A      (A[31:16]),
+        .fb16_B      (B[31:16]),
+        .fb16_C      (C[31:16]),
+        .result      (y1)
     );
 
-    pe_bf16_comb PE2 (
+    tensor16 PE2 (
         .op_mac (op_mac),
-        .A      (A[47:32]),
-        .B      (B[47:32]),
-        .C      (C[47:32]),
-        .Y      (y2)
+        .fb16_A      (A[47:32]),
+        .fb16_B      (B[47:32]),
+        .fb16_C      (C[47:32]),
+        .result      (y2)
     );
 
-    pe_bf16_comb PE3 (
+    tensor16 PE3 (
         .op_mac (op_mac),
-        .A      (A[63:48]),
-        .B      (B[63:48]),
-        .C      (C[63:48]),
-        .Y      (y3)
+        .fb16_A      (A[63:48]),
+        .fb16_B      (B[63:48]),
+        .fb16_C      (C[63:48]),
+        .result      (y3)
     );
 
     assign Y = {y3, y2, y1, y0};

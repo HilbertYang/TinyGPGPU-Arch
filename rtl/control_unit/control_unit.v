@@ -79,10 +79,9 @@ module control_unit (
     localparam ALU_SUB_I16 = 5'h01;
     localparam ALU_MAX_I16 = 5'h02;
     localparam ALU_ADD64   = 5'h03;
-    localparam ALU_ADDI64  = 5'h04;
-    localparam ALU_SETP_GE = 5'h05;
-    localparam ALU_SHIFTLV = 5'h06;
-    localparam ALU_SHIFTRV = 5'h07;
+    localparam ALU_SETP_GE = 5'h04;
+    localparam ALU_SHIFTLV = 5'h05;
+    localparam ALU_SHIFTRV = 5'h06;
     localparam ALU_NOP     = 5'h1f;
 
     // WB source select encoding
@@ -136,7 +135,7 @@ module control_unit (
                 wb_sel   = WB_ALU;
             end
             OP_ADDI64: begin
-                op_alu   = ALU_ADDI64;
+                op_alu   = ALU_ADD64;
                 use_imm  = 1'b1;
                 rf_wr_en = 1'b1;
                 wb_sel   = WB_ALU;
@@ -181,12 +180,12 @@ module control_unit (
                 rf_wr_en  = 1'b1;
                 wb_sel    = WB_MEM;
                 use_imm  = 1'b1;
-                op_alu   = ALU_ADDI64;
+                op_alu   = ALU_ADD64;
             end
             OP_ST64: begin
                 mem_wr_en = 1'b1;
                 use_imm  = 1'b1;
-                op_alu   = ALU_ADDI64;
+                op_alu   = ALU_ADD64;
                 // rd_addr holds the data register; rs1_addr is the base address
             end
 
