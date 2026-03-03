@@ -1,6 +1,3 @@
-WARNING:Simulator:694 - "C:/moduleTest/lab7test4/eeee.v" Line 335.  Module
-   tensor_core_bf16x4 does not have a `timescale directive but previous modules
-   do.
 This is a Full version of ISE Simulator(ISim).
 Simulator is doing circuit initialization process.
 Finished circuit initialization process.
@@ -1225,7 +1222,7 @@ WARNING:Simulator:29 - at 1.015 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.015 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.015 us, CLKB:1.015 us,1.000
    ns)
-[PASS] DMEM[20] = 0x412040a040003f80
+[FAIL] DMEM[20]  expected=0x412040a040003f80  got=0x412040a0400040a0
 WARNING:Simulator:29 - at 1.020 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.020 us, CLKA:1.020 us,1.000
    ns)
@@ -1412,6 +1409,6 @@ WARNING:Simulator:29 - at 1.165 us: Warning: Timing violation in
    ns)
 [PASS] DMEM[25] = 0x0000000000000000
 === ALL TESTS COMPLETE ===
-Stopped at time : 1.170 us : File "C:/moduleTest/lab7test4/wqdqwdsa.v" Line 282 
-Stopped at line=282 file name=C:/moduleTest/lab7test4/wqdqwdsa.v
+Stopped at time : 1.170 us : File "C:/moduleTest/lab7test7/test7/tb.v" Line 282 
+Stopped at line=282 file name=C:/moduleTest/lab7test7/test7/tb.v
 % 
