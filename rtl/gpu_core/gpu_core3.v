@@ -375,12 +375,10 @@ module gpu_core (
     reg [63:0] exmem_tc_y;
     reg [63:0] exmem_rs3_val;   // ST64 store data (RD field)
     reg [63:0] exmem_imm_or_param; // MOV / LD_PARAM writeback data
-    reg        exmem_pred;
     reg        exmem_mem_rd_en;
     reg        exmem_mem_wr_en;
     reg        exmem_rf_wr_en;
     reg [1:0]  exmem_wb_sel;
-    reg        exmem_pred_wr_en;
     reg        exmem_is_ret;
 
     // IMM/PARAM mux: MOV uses sign-ext imm15, LD_PARAM uses param value
@@ -393,12 +391,10 @@ module gpu_core (
             exmem_tc_y         <= 64'd0;
             exmem_rs3_val      <= 64'd0;
             exmem_imm_or_param <= 64'd0;
-            exmem_pred         <= 1'b0;
             exmem_mem_rd_en    <= 1'b0;
             exmem_mem_wr_en    <= 1'b0;
             exmem_rf_wr_en     <= 1'b0;
             exmem_wb_sel       <= 2'd0;
-            exmem_pred_wr_en   <= 1'b0;
             exmem_is_ret       <= 1'b0;
         end else if (advance) begin
             exmem_rs3_addr     <= idex_rs3_addr;
@@ -406,12 +402,10 @@ module gpu_core (
             exmem_tc_y         <= tc_y;
             exmem_rs3_val      <= idex_rs3_val;   // RD value for ST64
             exmem_imm_or_param <= ex_imm_or_param;
-            exmem_pred         <= alu_pred;
             exmem_mem_rd_en    <= idex_mem_rd_en;
             exmem_mem_wr_en    <= idex_mem_wr_en;
             exmem_rf_wr_en     <= idex_rf_wr_en;
             exmem_wb_sel       <= idex_wb_sel;
-            exmem_pred_wr_en   <= idex_pred_wr_en;
             exmem_is_ret       <= idex_is_ret;
         end
     end
