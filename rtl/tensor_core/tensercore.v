@@ -27,7 +27,7 @@ wire  [7:0] exponent_B = fb16_B[14:7];
 wire  [6:0] mantissa_A = fb16_A[6:0];
 wire  [6:0] mantissa_B = fb16_B[6:0];
 //intermid calculation
-wire  [15:0] mantissa_mul_CAL;
+wire  [15:7] mantissa_mul_CAL;
 wire  [7:0] bias;    //exponent bias for single precision is 127
 wire  carry_mul;         //carry over 
 wire [7:0] mantissa_A_CAL;
@@ -41,9 +41,10 @@ wire  [7:0]  exponent_mul_output;
 wire  sign_mul_output;
 wire  [15:0] mul_result = {sign_mul_output, exponent_mul_output, mantissa_mul_output};
 
-mul mantissa_16 (.a(mantissa_A_CAL), 
+//mul mantissa_16 (.a(mantissa_A_CAL), 
+multest2 mantissa_16 (.a(mantissa_A_CAL), 
               .b(mantissa_B_CAL), 
-              .p(mantissa_mul_CAL));   //output contains all precision for potential modification
+              .p(mantissa_mul_CAL[15:7]));   //output contains all precision for potential modification
 
 
 assign sign_mul_output = sign_A ^ sign_B; // XOR for sign of the result
@@ -73,7 +74,8 @@ wire [8:0] mantissa_mac_cal;
 wire carry_mac = mantissa_mac_cal[8]; // Check for carry from addition/subtraction
 wire [8:0] low_mac_mantissa;
 wire [8:0] high_mac_mantissa;
-reg [7:0]shiftback_mac;
+//reg [7:0]shiftback_mac;
+wire [7:0]shiftback_mac;
 reg  [8:0] mantissa_mac_subcheck;
 wire [7:0] exponent_shift_offset = (shiftback_mac == 8) ? exponent_C : shiftback_mac; // Determine the exponent offset for normalization based on shiftback value
 
@@ -89,8 +91,22 @@ assign mantissa_mac_cal = sign_mac_cal ? (high_mac_mantissa - low_mac_mantissa) 
 
 assign exponent_mac_output = (shift_signal ? exponent_C : exponent_mul_output) + carry_mac - exponent_shift_offset; // Use the larger exponent
 
-integer i;
+
+assign shiftback_mac =
+        (mantissa_mac_cal[8]) ? 8'd0 :
+        (mantissa_mac_cal[7]) ? 8'd0 :
+        (mantissa_mac_cal[6]) ? 8'd1 :
+        (mantissa_mac_cal[5]) ? 8'd2 :
+        (mantissa_mac_cal[4]) ? 8'd3 :
+        (mantissa_mac_cal[3]) ? 8'd4 :
+        (mantissa_mac_cal[2]) ? 8'd5 :
+        (mantissa_mac_cal[1]) ? 8'd6 :
+        (mantissa_mac_cal[0]) ? 8'd7 :
+                                8'd8;   // default
+										  
+// integer i;
 always @(*) begin
+	/*
        shiftback_mac = 8'd8; // Default value for shiftback
        for (i = 0; i <= 8; i = i + 1) begin
               if (mantissa_mac_cal[i]) begin
@@ -99,6 +115,8 @@ always @(*) begin
                      else   shiftback_mac = 7 - i; // Calculate shiftback based on the position of the first '1'
               end
        end
+		*/ 
+		 
 
        if (carry_mac) begin
               mantissa_mac_subcheck = mantissa_mac_cal >> 1;
