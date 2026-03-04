@@ -87,29 +87,29 @@ for (my $i=0; $i<@prog; $i++) {
     g("imem_write $i $hex");
 }
 
-print "\n=== RESET PC ===\n";
-g("pcreset");
+# print "\n=== RESET PC ===\n";
+# g("pcreset");
 
-print "\n=== RUN ===\n";
-g("run 1");
+# print "\n=== RUN ===\n";
+# g("run 1");
 
-print "\n=== WAIT DONE ===\n";
+# print "\n=== WAIT DONE ===\n";
 
-my $timeout = 200;
-while ($timeout--) {
-    my $out = `$GPUREG done_check`;
-    if ($out =~ /1/) {
-        print "DONE detected\n";
-        last;
-    }
-    sleep 1;
-}
+# my $timeout = 200;
+# while ($timeout--) {
+#     my $out = `$GPUREG done_check`;
+#     if ($out =~ /1/) {
+#         print "DONE detected\n";
+#         last;
+#     }
+#     sleep 1;
+# }
 
-g("run 0");
+# g("run 0");
 
-print "\n=== READ RESULT ===\n";
-g("dmem_read 20");
-g("dmem_read 21");
-g("dmem_read 22");
+# print "\n=== READ RESULT ===\n";
+# g("dmem_read 20");
+# g("dmem_read 21");
+# g("dmem_read 22");
 
 print "\n=== COMPLETE ===\n";
