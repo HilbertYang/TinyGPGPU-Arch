@@ -34,9 +34,9 @@ module gpu_top_regs #(
   wire [31:0] sw_dmem_addr;
   wire [31:0] sw_dmem_wdata_lo;
   wire [31:0] sw_dmem_wdata_hi;
-  wire [31:0] sw_param_addr;                                            //new
-  wire [31:0] sw_param_data_lo;                                         //new
-  wire [31:0] sw_param_data_hi;                                         //new
+  wire [31:0] sw_param_addr;                                           
+  wire [31:0] sw_param_data_lo;                                      
+  wire [31:0] sw_param_data_hi;                                        
   wire [9*32-1:0] software_regs_bus;
 
   wire run_level      =  sw_ctrl[0];
@@ -45,49 +45,43 @@ module gpu_top_regs #(
   wire imem_prog_we   =  sw_ctrl[3];
   wire dmem_prog_en   =  sw_ctrl[4];
   wire dmem_prog_we   =  sw_ctrl[5];
-  wire param_wr_en    =  sw_ctrl[6];                                    //new
+  wire param_wr_en    =  sw_ctrl[6];                                   
   wire [8:0]  imem_prog_addr  = sw_imem_addr[8:0];
   wire [31:0] imem_prog_wdata = sw_imem_wdata;
   wire [7:0]  dmem_prog_addr  = sw_dmem_addr[7:0];
   wire [63:0] dmem_prog_wdata = {sw_dmem_wdata_hi, sw_dmem_wdata_lo};
-  wire [2:0]  param_wr_addr   = sw_param_addr[2:0];                     //new
-  wire [63:0] param_wr_data   = {sw_param_data_hi, sw_param_data_lo};   //new
+  wire [2:0]  param_wr_addr   = sw_param_addr[2:0];                    
+  wire [63:0] param_wr_data   = {sw_param_data_hi, sw_param_data_lo};  
 
 //=============================HW REGS========================================
   wire [63:0] dmem_prog_rdata;
-  wire        done;                                                      //new
+  wire        done;                                                      
 
   reg [31:0] hb;
   always @(posedge clk) begin
     if (reset) hb <= 0;
     else hb <= hb + 1;
   end
-  wire [31:0] hw_pc_dbg = hb;
-  // wire [31:0] hw_pc_dbg        = {23'h0, pc_dbg}; 
+  
+  wire [31:0] hw_pc_dbg        = {23'h0, pc_dbg}; 
   wire [31:0] hw_if_instr      = if_instr_dbg;
   wire [31:0] hw_dmem_rdata_lo = dmem_prog_rdata[31:0];
   wire [31:0] hw_dmem_rdata_hi = dmem_prog_rdata[63:32];
-  wire [31:0] hw_done          = {31'h0, done};                          //new
-  wire [5*32-1:0] hardware_regs_bus;
+  wire [31:0] hw_done          = {31'h0, done};                         
+  wire [31:0] hw_hb            = hb;                                 
+  wire [6*32-1:0] hardware_regs_bus;
 
 
 
 //=============================PACK BUS============================================
 
-  assign hardware_regs_bus = {hw_done,
+  assign hardware_regs_bus = {hw_hb,
+                              hw_done,
                               hw_dmem_rdata_hi,
                               hw_dmem_rdata_lo,
                               hw_if_instr,
                               hw_pc_dbg};
-  // assign {sw_param_data_hi,
-  //         sw_param_data_lo,
-  //         sw_param_addr,
-  //         sw_dmem_wdata_hi,
-  //         sw_dmem_wdata_lo,
-  //         sw_dmem_addr,
-  //         sw_imem_wdata,
-  //         sw_imem_addr,
-  //         sw_ctrl} = software_regs_bus;
+
   assign sw_ctrl            = software_regs_bus[ 31:  0];
   assign sw_imem_addr       = software_regs_bus[ 63: 32];
   assign sw_imem_wdata      = software_regs_bus[ 95: 64];
@@ -144,7 +138,7 @@ module gpu_top_regs #(
     .REG_ADDR_WIDTH    (`GPU_REG_ADDR_WIDTH),// Only the lower REG_ADDR_WIDTH bits of the address will be decoded
     .NUM_COUNTERS      (0),
     .NUM_SOFTWARE_REGS (9),
-    .NUM_HARDWARE_REGS (5)
+    .NUM_HARDWARE_REGS (6)
   ) u_regs (
     .reg_req_in        (reg_req_in),
     .reg_ack_in        (reg_ack_in),

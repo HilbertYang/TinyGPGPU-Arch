@@ -104,5 +104,11 @@
       <nf:type>generic_hardware32</nf:type>
     </nf:register>
 
+    <nf:register>
+      <nf:name>hb</nf:name>
+      <nf:description>heart beat</nf:description>
+      <nf:type>generic_hardware32</nf:type>
+    </nf:register>
+
   </nf:registers>
 </nf:module>
