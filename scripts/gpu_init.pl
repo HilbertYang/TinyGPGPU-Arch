@@ -43,14 +43,13 @@ my $OP_RET      = 0x15;
 my $NOP = 0x0000_0000;
 
 # -------- readable program --------
-# Pipeline: IF->ID->EX->MEM->WB, no forwarding, 3-NOP write latency
-# BR/BPR resolve in EX; BRAM adds 1 extra fetch cycle -> 3 delay slots each
+# Pipeline: IF->ID->EX->MEM->WB, with internal forwarding
+# BR/BPR resolve in EX -> 2 delay slots (ID + IF stages drain)
+# BRAM registered output -> 1 extra fetch cycle -> total 3 delay slots
 #
-# Hazard notes:
-#   ADDI64 r3 (#20) -> ST64 reads r3 (#21): 0-gap, INTENTIONAL
-#     (ST64 sees old r3, giving post-store-increment: stores to DMEM[20/21/22])
-#   ADDI64 r5 (#22) -> SETP_GE reads r5 (#10): 3-gap (#7,#8,#9) [FIXED]
-#   ADD_I16 r12 (#17) -> ST64 reads r12 (#21): 3-gap (#18,#19,#20) [FIXED]
+# Hazard notes (forwarding covers most; r3 hazard is intentional):
+#   ADDI64 r3 (#15) -> ST64 reads r3 (#16): 0-gap, INTENTIONAL
+#     ST64 sees old r3 -> stores to DMEM[20/21/22] (pre-increment address)
 my @prog = (
   ENC($OP_LD_PARAM ,1,0,0,1),   #0  r1 = param[1] = src_A_ptr
   ENC($OP_LD_PARAM ,2,0,0,2),   #1  r2 = param[2] = src_B_ptr
@@ -59,23 +58,18 @@ my @prog = (
   ENC($OP_MOV      ,5,0,0,0),   #4  r5 = 0  (loop counter)
   $NOP,                         #5
   $NOP,                         #6
-  $NOP,                         #7  <- LOOP TOP (BR target); NOP 1 after ADDI64 r5
-  $NOP,                         #8  <- NOP 2
-  $NOP,                         #9  <- NOP 3  => r5 safe to read at #10
-  ENC($OP_SETP_GE  ,0,5,4,0),   #10 pred = (r5 >= r4)
-  ENC($OP_BPR      ,0,0,0,23),  #11 if pred -> RET (#23)
-  ENC($OP_LD64     ,A,1,0,0),   #12 BPR-ds1: r10 = DMEM[r1]
-  ENC($OP_LD64     ,B,2,0,0),   #13 BPR-ds2: r11 = DMEM[r2]
-  ENC($OP_ADDI64   ,1,1,0,1),   #14 BPR-ds3: r1 += 1
-  ENC($OP_ADDI64   ,2,2,0,1),   #15 r2 += 1
-  $NOP,                         #16 wait: r10 gap(#12->#17)=4, r11 gap(#13->#17)=3
-  ENC($OP_ADD_I16  ,C,A,B,0),   #17 r12 = r10 + r11
-  $NOP,                         #18 wait for r12 (gap #17->#21 = 3 via #18,#19,#20)
-  ENC($OP_BR       ,0,0,0,7),   #19 loop back to #7
-  ENC($OP_ADDI64   ,3,3,0,1),   #20 BR-ds1: r3 += 1  (intentional 0-gap hazard w/#21)
-  ENC($OP_ST64     ,C,3,0,0),   #21 BR-ds2: DMEM[old_r3] = r12
-  ENC($OP_ADDI64   ,5,5,0,4),   #22 BR-ds3: r5 += 4
-  ENC($OP_RET      ,0,0,0,0),   #23
+  ENC($OP_SETP_GE  ,0,5,4,0),   #7  pred = (r5 >= r4)   <- LOOP TOP
+  ENC($OP_BPR      ,0,0,0,18),  #8  if pred -> RET (#18)
+  ENC($OP_LD64     ,A,1,0,0),   #9  BPR-ds1: r10 = DMEM[r1]
+  ENC($OP_LD64     ,B,2,0,0),   #10 BPR-ds2: r11 = DMEM[r2]
+  ENC($OP_ADDI64   ,1,1,0,1),   #11 BPR-ds3: r1 += 1
+  ENC($OP_ADDI64   ,2,2,0,1),   #12 r2 += 1
+  ENC($OP_ADD_I16  ,C,A,B,0),   #13 r12 = r10 + r11
+  ENC($OP_BR       ,0,0,0,7),   #14 loop back to #7
+  ENC($OP_ADDI64   ,3,3,0,1),   #15 BR-ds1: r3 += 1  (intentional hazard -> ST64 uses old r3)
+  ENC($OP_ST64     ,C,3,0,0),   #16 BR-ds2: DMEM[old_r3] = r12
+  ENC($OP_ADDI64   ,5,5,0,4),   #17 BR-ds3: r5 += 4
+  ENC($OP_RET      ,0,0,0,0),   #18
 );
 
 my @dmem_init = (
