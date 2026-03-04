@@ -108,15 +108,15 @@ module gpu_core (
     assign      pc_dbg = pc;
     wire        branch_taken;
     wire [8:0]  branch_target;
-    
+    wire [8:0]  pc_next;
+    assign      pc_next = branch_taken ? branch_target : pc + 9'd1;
+
     //pc update
     always @(posedge clk) begin
         if (reset || pc_reset) begin
             pc <= 9'd0;
-        end else if (branch_taken) begin
-            pc <= branch_target;
         end else if (advance) begin
-            pc <= pc + 9'd1;
+            pc <= pc_next;
         end
     end
     
@@ -151,7 +151,7 @@ module gpu_core (
         .clk (clk),
         .din (imem_din_mux),
         .dout(imem_dout),
-        .en  (1'b1),
+        .en  (advance | imem_prog_we),
         .we  (imem_we_mux)
     );
     assign if_instr_dbg = imem_dout;//output for debug
