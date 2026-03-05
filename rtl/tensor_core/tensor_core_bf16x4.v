@@ -11,45 +11,45 @@ module tensor_core_bf16x4(
     output wire [63:0] Y           // 4 × bf16 result packed
 );
 
-    // wire [15:0] y0, y1, y2, y3;
+    wire [15:0] y0, y1, y2, y3;
 
-    // tensor16 PE0 (
-    //     .op_mac      (op_mac),
-    //     .fb16_A      (A[15:0]),
-    //     .fb16_B      (B[15:0]),
-    //     .fb16_C      (C[15:0]),
-    //     .result      (y0)
-    // );
+    tensor16 PE0 (
+        .op_mac      (op_mac),
+        .fb16_A      (A[15:0]),
+        .fb16_B      (B[15:0]),
+        .fb16_C      (C[15:0]),
+        .result      (y0)
+    );
 
        
-    // tensor16 PE1 (
-    //     .op_mac (op_mac),
-    //     .fb16_A      (A[31:16]),
-    //     .fb16_B      (B[31:16]),
-    //     .fb16_C      (C[31:16]),
-    //     .result      (y1)
-    // );
+    tensor16 PE1 (
+        .op_mac (op_mac),
+        .fb16_A      (A[31:16]),
+        .fb16_B      (B[31:16]),
+        .fb16_C      (C[31:16]),
+        .result      (y1)
+    );
 
-    // tensor16 PE2 (
-    //     .op_mac (op_mac),
-    //     .fb16_A      (A[47:32]),
-    //     .fb16_B      (B[47:32]),
-    //     .fb16_C      (C[47:32]),
-    //     .result      (y2)
-    // );
+    tensor16 PE2 (
+        .op_mac (op_mac),
+        .fb16_A      (A[47:32]),
+        .fb16_B      (B[47:32]),
+        .fb16_C      (C[47:32]),
+        .result      (y2)
+    );
 
-    // tensor16 PE3 (
-    //     .op_mac (op_mac),
-    //     .fb16_A      (A[63:48]),
-    //     .fb16_B      (B[63:48]),
-    //     .fb16_C      (C[63:48]),
-    //     .result      (y3)
-    // );
+    tensor16 PE3 (
+        .op_mac (op_mac),
+        .fb16_A      (A[63:48]),
+        .fb16_B      (B[63:48]),
+        .fb16_C      (C[63:48]),
+        .result      (y3)
+    );
 
-    // assign Y = {y3, y2, y1, y0};
+    assign Y = {y3, y2, y1, y0};
     
-    // --- Tensor core PEs stubbed out (timing: combinatorial path too long) ---
-    // Restore PE instances when timing is resolved.
-    assign Y = 64'b0;
+    // // --- Tensor core PEs stubbed out (timing: combinatorial path too long) ---
+    // // Restore PE instances when timing is resolved.
+    // assign Y = 64'b0;
 
 endmodule
