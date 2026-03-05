@@ -66,9 +66,9 @@ my @prog = (
   ENC($OP_ADDI64   ,2,2,0,1),   #12 r2 += 1
   ENC($OP_ADD_I16  ,C,A,B,0),   #13 r12 = r10 + r11
   ENC($OP_BR       ,0,0,0,7),   #14 loop back to #7
-  ENC($OP_ADDI64   ,3,3,0,1),   #15 BR-ds1: r3 += 1  (intentional hazard -> ST64 uses old r3)
+  ENC($OP_ADDI64   ,5,5,0,4),   #15 BR-ds1: r3 += 1  (intentional hazard -> ST64 uses old r3)
   ENC($OP_ST64     ,C,3,0,0),   #16 BR-ds2: DMEM[old_r3] = r12
-  ENC($OP_ADDI64   ,5,5,0,4),   #17 BR-ds3: r5 += 4
+  ENC($OP_ADDI64   ,3,3,0,1),   #17 BR-ds3: r5 += 4
   ENC($OP_RET      ,0,0,0,0),   #18
 );
 
