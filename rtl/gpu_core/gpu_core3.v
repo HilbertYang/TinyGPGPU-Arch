@@ -110,6 +110,7 @@ module gpu_core (
     reg        tc_active;
     reg [1:0]  tc_counter;
 
+    wire        id_use_tc;
     always @(posedge clk) begin
         if (reset || pc_reset) begin
             tc_active  <= 1'b0;
@@ -205,7 +206,7 @@ module gpu_core (
     wire [2:0]  id_param_addr;
 
     wire [4:0]  id_op_alu;
-    wire        id_use_tc;
+    // wire        id_use_tc;
     wire        id_op_tc;
     wire        id_use_imm;
     wire        id_mem_rd_en;
