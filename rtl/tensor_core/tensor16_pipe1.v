@@ -72,7 +72,7 @@ reg op_mac_stage2;
 				sign_mul_output_stage2 <= 1'b0;
 				fb16_C_stage2 <= 8'b0;
 				op_mac_stage2 <= 1'b0;
-        end else if (advance) begin
+        end else begin
             mantissa_mul_output_stage2 <= mantissa_mul_output;
 				exponent_mul_output_stage2 <= exponent_mul_output;
 				fb16_C_stage2 <= fb16_C;
