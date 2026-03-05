@@ -4,6 +4,10 @@
 // op_mac=1 : Y[i] = C[i] + A[i] * B[i]
 
 module tensor_core_bf16x4(
+    input  wire        clk,
+    input  wire        reset,
+    input  wire        pc_reset,
+    input  wire        advance,
     input  wire        op_mac,     // 0=MUL, 1=MAC
     input  wire [63:0] A,          // 4 × bf16 packed [lane3|lane2|lane1|lane0]
     input  wire [63:0] B,          // 4 × bf16 packed
@@ -13,7 +17,11 @@ module tensor_core_bf16x4(
 
     wire [15:0] y0, y1, y2, y3;
 
-    tensor16 PE0 (
+    tensor16_pipe1 PE0 (
+        .clk         (clk),
+        .reset       (reset),
+        .pc_reset    (pc_reset),
+        .advance     (advance),
         .op_mac      (op_mac),
         .fb16_A      (A[15:0]),
         .fb16_B      (B[15:0]),
@@ -22,7 +30,11 @@ module tensor_core_bf16x4(
     );
 
        
-    tensor16 PE1 (
+    tensor16_pipe1 PE1 (
+        .clk         (clk),
+        .reset       (reset),
+        .pc_reset    (pc_reset),
+        .advance     (advance),
         .op_mac (op_mac),
         .fb16_A      (A[31:16]),
         .fb16_B      (B[31:16]),
@@ -30,7 +42,11 @@ module tensor_core_bf16x4(
         .result      (y1)
     );
 
-    tensor16 PE2 (
+    tensor16_pipe1 PE2 (
+        .clk         (clk),
+        .reset       (reset),
+        .pc_reset    (pc_reset),
+        .advance     (advance),
         .op_mac (op_mac),
         .fb16_A      (A[47:32]),
         .fb16_B      (B[47:32]),
@@ -38,7 +54,11 @@ module tensor_core_bf16x4(
         .result      (y2)
     );
 
-    tensor16 PE3 (
+    tensor16_pipe1 PE3 (
+        .clk         (clk),
+        .reset       (reset),
+        .pc_reset    (pc_reset),
+        .advance     (advance),
         .op_mac (op_mac),
         .fb16_A      (A[63:48]),
         .fb16_B      (B[63:48]),

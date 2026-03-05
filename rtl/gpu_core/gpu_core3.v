@@ -101,8 +101,33 @@ module gpu_core (
         end
     end
     
-    wire step_pulse = step & ~step_d; //Step pulse is generated when step goes from 0 to 1
-    wire advance    = run | step_pulse; 
+    wire step_pulse  = step & ~step_d; // Step pulse is generated when step goes from 0 to 1
+    wire pre_advance = run | step_pulse;
+
+    // TC stall: hold pipeline for TC_LATENCY cycles after TC enters EX,
+    // giving the free-running 2-stage TC pipeline time to produce its result.
+    localparam TC_LATENCY = 2;
+    reg        tc_active;
+    reg [1:0]  tc_counter;
+
+    always @(posedge clk) begin
+        if (reset || pc_reset) begin
+            tc_active  <= 1'b0;
+            tc_counter <= 2'd0;
+        end else if (id_use_tc & pre_advance & ~tc_active) begin
+            // TC instruction transitioning ID→EX: start stall counter
+            tc_active  <= 1'b1;
+            tc_counter <= TC_LATENCY - 1;   // counts TC_LATENCY-1 -> 0
+        end else if (tc_active) begin
+            if (tc_counter == 0)
+                tc_active <= 1'b0;          // release stall
+            else
+                tc_counter <= tc_counter - 1;
+        end
+    end
+
+    wire tc_stall = tc_active;
+    wire advance  = pre_advance & ~tc_stall;
 
     reg  [8:0]  pc; 
     assign      pc_dbg = pc;
@@ -334,11 +359,15 @@ module gpu_core (
     wire        tc_op_mac = idex_op_tc;
     wire [63:0] tc_y;
     tensor_core_bf16x4 TC(
-        .op_mac    (tc_op_mac),
-        .A         (tc_a),
-        .B         (tc_b),
-        .C         (tc_c),
-        .Y         (tc_y)
+        .clk         (clk),
+        .reset       (reset),
+        .pc_reset    (pc_reset),
+        .advance     (advance),
+        .op_mac      (tc_op_mac),
+        .A           (tc_a),
+        .B           (tc_b),
+        .C           (tc_c),
+        .Y           (tc_y)
     );
 
     //alu x4
