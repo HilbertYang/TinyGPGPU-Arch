@@ -173,8 +173,12 @@ module tb_gpu_core3;
         input integer timeout_cycles;
         integer cnt;
         begin
-            cnt = 0;
+            cnt = 4;
             @(negedge clk); run = 1'b1;
+            @(posedge clk); #1;
+            @(posedge clk); #1;
+            @(posedge clk); #1;
+            @(posedge clk); #1;
             @(posedge clk); #1;
             while (!done && cnt < timeout_cycles) begin
                 @(posedge clk); #1;
