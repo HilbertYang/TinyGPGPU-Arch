@@ -201,7 +201,7 @@ module tb_gpu_core3;
 
 
     // -------------------------------------------------------
-    // Test : ADD
+    // Test : MAC
     // -------------------------------------------------------
     task load_test_add;
         begin
@@ -245,9 +245,9 @@ module tb_gpu_core3;
         repeat(2) @(posedge clk);
 
         // ========================================================
-        // TEST : FMA
+        // TEST : FMA/MAC
         // ========================================================
-        $display("\n=== TEST : ADD  ===");
+        $display("\n=== TEST : MAC  ===");
 
         // Pre-load bf16 input vectors
         dmem_write(8'd0, 64'h4040_4000_3F80_0000);//3  2  1  0
