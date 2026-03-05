@@ -176,7 +176,8 @@ module tb_gpu_core3;
             cnt = 4;
             @(negedge clk); run = 1'b1;
             @(posedge clk); #1;
-            @(posedge clk); #1;
+
+            @(posedge clk); #1;//add 4 dalay before detect DONE, which is prevent reading the Imem_write RET
             @(posedge clk); #1;
             @(posedge clk); #1;
             @(posedge clk); #1;
