@@ -1,7 +1,7 @@
 
 `timescale 1ns / 1ps
 
-module tensor16_pipe1 (
+module tensor16_pipe2 (
        input [15:0]           fb16_A,
        input [15:0]           fb16_B,
        input [15:0]           fb16_C,
