@@ -17,7 +17,7 @@ module tensor_core_bf16x4(
 
     wire [15:0] y0, y1, y2, y3;
 
-    tensor16_dummy PE0 (
+    tensor16_pipe3 PE0 (
         .clk         (clk),
         .reset       (reset),
         .pc_reset    (pc_reset),
@@ -30,7 +30,7 @@ module tensor_core_bf16x4(
     );
 
        
-    tensor16_dummy PE1 (
+    tensor16_pipe3 PE1 (
         .clk         (clk),
         .reset       (reset),
         .pc_reset    (pc_reset),
@@ -42,7 +42,7 @@ module tensor_core_bf16x4(
         .result      (y1)
     );
 
-    tensor16_dummy PE2 (
+    tensor16_pipe3 PE2 (
         .clk         (clk),
         .reset       (reset),
         .pc_reset    (pc_reset),
@@ -54,7 +54,7 @@ module tensor_core_bf16x4(
         .result      (y2)
     );
 
-    tensor16_dummy PE3 (
+    tensor16_pipe3 PE3 (
         .clk         (clk),
         .reset       (reset),
         .pc_reset    (pc_reset),
