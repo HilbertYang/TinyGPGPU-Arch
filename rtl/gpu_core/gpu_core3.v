@@ -106,9 +106,9 @@ module gpu_core (
 
     // TC stall: hold pipeline for TC_LATENCY cycles after TC enters EX,
     // giving the free-running 2-stage TC pipeline time to produce its result.
-    localparam TC_LATENCY = 4;
+    localparam TC_LATENCY = 6;
     reg        tc_active;
-    reg [1:0]  tc_counter;
+    reg [2:0]  tc_counter;  // must be wide enough to hold TC_LATENCY-1
 
     wire        id_use_tc;
     always @(posedge clk) begin
