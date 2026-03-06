@@ -2,7 +2,7 @@
 
 A custom, standalone GPGPU processor designed for accelerating **Artificial Neural Networks (ANN)** and High-Performance Computing (HPC) tasks. This project features a full hardware-software stack, including a custom SIMD architecture and a compilation pipeline that translates NVIDIA CUDA PTX into custom machine code.
 
-## 🚀 Key Features
+##  Key Features
 
 - **PTX-Compatible Toolchain**: Supports a seamless flow from standard CUDA C++ (__global__ kernels) to hardware execution via a custom Python-based assembly translator.
 - **BFloat16 SIMD Engine**: Native hardware support for **Google’s BFloat16** floating-point format, providing the optimal balance between range and hardware resource efficiency for AI inference.
@@ -12,7 +12,7 @@ A custom, standalone GPGPU processor designed for accelerating **Artificial Neur
 
 ---
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 The core is designed with a classic Fetch-Decode-Execute-Writeback pipeline, optimized for the **NetFPGA** platform where hardware resources are at a premium.
 
@@ -25,7 +25,7 @@ The core is designed with a classic Fetch-Decode-Execute-Writeback pipeline, opt
 
 ---
 
-## 🛠️ Compiler Pipeline
+##  Compiler Pipeline
 
 This project bridges the gap between high-level CUDA programming and custom RTL design.
 
@@ -39,7 +39,7 @@ kernel.cu --> nvcc (-ptx) --> kernel.ptx --> Python Translator --> gpu_program.h
 
 ---
 
-## 📈 Supported Operations
+##  Supported Operations
 
 | Operation | Type | Hardware Implementation |
 | :--- | :--- | :--- |
@@ -51,7 +51,7 @@ kernel.cu --> nvcc (-ptx) --> kernel.ptx --> Python Translator --> gpu_program.h
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 * `/rtl`: SystemVerilog/Verilog source code for the GPGPU core.
 * `/compiler`: Python scripts for PTX parsing and Opcode generation.
@@ -64,7 +64,7 @@ kernel.cu --> nvcc (-ptx) --> kernel.ptx --> Python Translator --> gpu_program.h
 
 ---
 
-## 🎯 Design Philosophy (Interview Notes)
+##  Design Philosophy (Interview Notes)
 
 In this design, I chose **SIMD over SIMT** to maximize throughput on resource-constrained FPGA fabric. By treating 64-bit registers as packed vectors, the architecture achieves massive parallelism without the overhead of complex thread-masking hardware. The inclusion of **BFloat16** reflects modern industry trends (like Google TPUs and NVIDIA H100s), prioritizing dynamic range over precision for neural network stability.
 
