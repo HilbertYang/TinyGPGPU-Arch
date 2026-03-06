@@ -1,5 +1,3 @@
-WARNING:Simulator:694 - "C:/moduleTest/lab7test7/gpu_core3.v" Line 234.  Module
-   regfile does not have a `timescale directive but previous modules do.
 This is a Full version of ISE Simulator(ISim).
 Simulator is doing circuit initialization process.
 Finished circuit initialization process.
@@ -75,7 +73,7 @@ WARNING:Simulator:29 - at 60.000 ns: Warning: Timing violation in
 WARNING:Simulator:29 - at 60.000 ns: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:60.000 ns, CLKB:60.000
    ns,1.000 ns)
-=== TEST : ADD  ===
+=== TEST : MAC  ===
 WARNING:Simulator:29 - at 65.000 ns: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:65.000 ns, CLKA:65.000
    ns,1.000 ns)
@@ -1150,6 +1148,7 @@ WARNING:Simulator:29 - at 955.000 ns: Warning: Timing violation in
 WARNING:Simulator:29 - at 955.000 ns: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:955.000 ns, CLKB:955.000
    ns,1.000 ns)
+[INFO] done after 52 cycles
 WARNING:Simulator:29 - at 960.000 ns: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:960.000 ns, CLKA:960.000
    ns,1.000 ns)
@@ -1223,6 +1222,7 @@ WARNING:Simulator:29 - at 1.015 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.015 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.015 us, CLKB:1.015 us,1.000
    ns)
+[FAIL] DMEM[20]  expected=0x412040a040003f80  got=0x412040a0400040a0
 WARNING:Simulator:29 - at 1.020 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.020 us, CLKA:1.020 us,1.000
    ns)
@@ -1235,7 +1235,6 @@ WARNING:Simulator:29 - at 1.025 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.025 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.025 us, CLKB:1.025 us,1.000
    ns)
-[INFO] done after 60 cycles
 WARNING:Simulator:29 - at 1.030 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.030 us, CLKA:1.030 us,1.000
    ns)
@@ -1260,6 +1259,7 @@ WARNING:Simulator:29 - at 1.045 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.045 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.045 us, CLKB:1.045 us,1.000
    ns)
+[PASS] DMEM[21] = 0x4248421441d04188
 WARNING:Simulator:29 - at 1.050 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.050 us, CLKA:1.050 us,1.000
    ns)
@@ -1296,6 +1296,7 @@ WARNING:Simulator:29 - at 1.075 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.075 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.075 us, CLKB:1.075 us,1.000
    ns)
+[PASS] DMEM[22] = 0x42f442ca42a44282
 WARNING:Simulator:29 - at 1.080 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.080 us, CLKA:1.080 us,1.000
    ns)
@@ -1308,7 +1309,6 @@ WARNING:Simulator:29 - at 1.085 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.085 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.085 us, CLKB:1.085 us,1.000
    ns)
-[PASS] DMEM[20] = 0x0006000400020000
 WARNING:Simulator:29 - at 1.090 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.090 us, CLKA:1.090 us,1.000
    ns)
@@ -1333,6 +1333,7 @@ WARNING:Simulator:29 - at 1.105 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.105 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.105 us, CLKB:1.105 us,1.000
    ns)
+[PASS] DMEM[23] = 0x0000000000000000
 WARNING:Simulator:29 - at 1.110 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.110 us, CLKA:1.110 us,1.000
    ns)
@@ -1345,7 +1346,6 @@ WARNING:Simulator:29 - at 1.115 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.115 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.115 us, CLKB:1.115 us,1.000
    ns)
-[PASS] DMEM[21] = 0x000e000c000a0008
 WARNING:Simulator:29 - at 1.120 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.120 us, CLKA:1.120 us,1.000
    ns)
@@ -1370,6 +1370,7 @@ WARNING:Simulator:29 - at 1.135 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.135 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.135 us, CLKB:1.135 us,1.000
    ns)
+[PASS] DMEM[24] = 0x0000000000000000
 WARNING:Simulator:29 - at 1.140 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.140 us, CLKA:1.140 us,1.000
    ns)
@@ -1382,7 +1383,6 @@ WARNING:Simulator:29 - at 1.145 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.145 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.145 us, CLKB:1.145 us,1.000
    ns)
-[PASS] DMEM[22] = 0x0016001400120010
 WARNING:Simulator:29 - at 1.150 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.150 us, CLKA:1.150 us,1.000
    ns)
@@ -1407,20 +1407,8 @@ WARNING:Simulator:29 - at 1.165 us: Warning: Timing violation in
 WARNING:Simulator:29 - at 1.165 us: Warning: Timing violation in
    /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.165 us, CLKB:1.165 us,1.000
    ns)
-WARNING:Simulator:29 - at 1.170 us: Warning: Timing violation in
-   /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.170 us, CLKA:1.170 us,1.000
-   ns)
-WARNING:Simulator:29 - at 1.170 us: Warning: Timing violation in
-   /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.170 us, CLKB:1.170 us,1.000
-   ns)
-WARNING:Simulator:29 - at 1.175 us: Warning: Timing violation in
-   /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKB:1.175 us, CLKA:1.175 us,1.000
-   ns)
-WARNING:Simulator:29 - at 1.175 us: Warning: Timing violation in
-   /tb_gpu_core3/dut/u_dmem/inst/  $recovery( CLKA:1.175 us, CLKB:1.175 us,1.000
-   ns)
-[PASS] DMEM[23] = 0x0000000000000000
+[PASS] DMEM[25] = 0x0000000000000000
 === ALL TESTS COMPLETE ===
-Stopped at time : 1.180 us : File "C:/moduleTest/lab7test7/test7/tb.v" Line 278 
-Stopped at line=278 file name=C:/moduleTest/lab7test7/test7/tb.v
-% 
+Stopped at time : 1.170 us : File "C:/moduleTest/labtest5/tb_gpu_core3_FMA_sample.v" Line 286 
+Stopped at line=286 file name=C:/moduleTest/labtest5/tb_gpu_core3_FMA_sample.v
+% 1212

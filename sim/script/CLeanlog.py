@@ -1,5 +1,5 @@
 import re
-from datetime import datetime  # 导入日期时间模块
+from datetime import datetime  
 
 INPUT_FILENAME = 'original_log.txt'
 
