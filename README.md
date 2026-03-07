@@ -64,7 +64,7 @@ kernel.cu --> nvcc (-ptx) --> kernel.ptx --> Python Translator --> gpu_program.h
 
 ---
 
-##  Design Philosophy (Interview Notes)
+##  Words form us
 
 In this design, I chose **SIMD over SIMT** to maximize throughput on resource-constrained FPGA fabric. By treating 64-bit registers as packed vectors, the architecture achieves massive parallelism without the overhead of complex thread-masking hardware. The inclusion of **BFloat16** reflects modern industry trends (like Google TPUs and NVIDIA H100s), prioritizing dynamic range over precision for neural network stability.
 
