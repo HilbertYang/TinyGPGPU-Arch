@@ -450,8 +450,10 @@ module gpu_core (
     wire        dmem_en_a;
     assign dmem_addr_a = exmem_alu_y[7:0];
     assign dmem_din_a  = exmem_rs3_val;
-    assign dmem_we_a   = exmem_mem_wr_en;
-    assign dmem_en_a   = exmem_mem_rd_en | exmem_mem_wr_en;
+    // assign dmem_we_a   = exmem_mem_wr_en;
+    // assign dmem_en_a   = exmem_mem_rd_en | exmem_mem_wr_en;
+    assign dmem_en_a = advance & (exmem_mem_rd_en | exmem_mem_wr_en);
+    assign dmem_we_a = advance & exmem_mem_wr_en;
 
     wire [63:0] dmem_douta;
     wire [63:0] dmem_doutb;
