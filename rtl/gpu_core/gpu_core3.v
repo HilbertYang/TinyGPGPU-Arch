@@ -119,7 +119,7 @@ module gpu_core (
             // TC instruction transitioning ID→EX: start stall counter
             tc_active  <= 1'b1;
             tc_counter <= TC_LATENCY - 1;   // counts TC_LATENCY-1 -> 0
-        end else if (tc_active) begin
+        end else if (tc_active & pre_advance) begin
             if (tc_counter == 0)
                 tc_active <= 1'b0;          // release stall
             else
@@ -363,7 +363,7 @@ module gpu_core (
         .clk         (clk),
         .reset       (reset),
         .pc_reset    (pc_reset),
-        .advance     (advance),
+        .advance     (pre_advance),
         .op_mac      (tc_op_mac),
         .A           (tc_a),
         .B           (tc_b),
