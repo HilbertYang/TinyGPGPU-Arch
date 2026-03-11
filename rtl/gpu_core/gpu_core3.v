@@ -360,15 +360,14 @@ module gpu_core (
     wire        tc_op_mac = idex_op_tc;
     wire [63:0] tc_y;
     tensor_core_bf16x4 TC(
-        .clk         (clk),
-        .reset       (reset),
-        .pc_reset    (pc_reset),
-        .advance     (pre_advance),
-        .op_mac      (tc_op_mac),
-        .A           (tc_a),
-        .B           (tc_b),
-        .C           (tc_c),
-        .Y           (tc_y)
+        .clk      (clk),
+        .reset    (reset),
+        .pc_reset (pc_reset),
+        .op_mac   (tc_op_mac),
+        .A        (tc_a),
+        .B        (tc_b),
+        .C        (tc_c),
+        .Y        (tc_y)
     );
 
     //alu x4
