@@ -221,9 +221,9 @@ module tb_gpu_core3;
             imem_write(9'd12,   ENC(OP_ADDI64   , 4'd2, 4'd2, 4'd0, 15'd1));
             imem_write(9'd13,   ENC(OP_ADD_I16  , 4'd12, 4'd10, 4'd11, 15'd0));
             imem_write(9'd14,   ENC(OP_BR       , 4'd0, 4'd0, 4'd0, 15'd7));
-            imem_write(9'd15,   ENC(OP_ADDI64   , 4'd3, 4'd3, 4'd0, 15'd1));
+            imem_write(9'd15,   ENC(OP_ADDI64   , 4'd5, 4'd5, 4'd0, 15'd4));
             imem_write(9'd16,   ENC(OP_ST64     , 4'd12, 4'd3, 4'd0, 15'd0));
-            imem_write(9'd17,   ENC(OP_ADDI64   , 4'd5, 4'd5, 4'd0, 15'd4));
+            imem_write(9'd17,   ENC(OP_ADDI64   , 4'd3, 4'd3, 4'd0, 15'd1));
 
             imem_write(9'd18,   ENC(OP_RET      , 4'd0, 4'd0, 4'd0, 15'd0));
             imem_write(9'd19 ,   NOP);
