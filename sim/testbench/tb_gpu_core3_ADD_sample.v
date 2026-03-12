@@ -226,6 +226,7 @@ module tb_gpu_core3;
             imem_write(9'd17,   ENC(OP_ADDI64   , 4'd5, 4'd5, 4'd0, 15'd4));
 
             imem_write(9'd18,   ENC(OP_RET      , 4'd0, 4'd0, 4'd0, 15'd0));
+            imem_write(9'd19 ,   NOP);
         end
     endtask
 
