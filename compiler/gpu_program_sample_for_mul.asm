@@ -1,9 +1,9 @@
                     RD      RS1     RS2     IMM1
 ---------------------------------------------
-    0   LD_PARAM    R1      0       0       0      //load a
-    1   LD_PARAM    R2      0       0       0      //load b
-    2   LD_PARAM    R3      0       0       0      //load c/out
-    3   LD_PARAM    R4      0       0       0      //load n
+    0   LD_PARAM    R1      0       0       1      //load a
+    1   LD_PARAM    R2      0       0       2      //load b
+    2   LD_PARAM    R3      0       0       3      //load c/out
+    3   LD_PARAM    R4      0       0       4      //load n
     4   MOV         R5      0       0       0      //reset thread_id(R5=0)
     5   NOP
     6   NOP
