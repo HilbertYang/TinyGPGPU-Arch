@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 import sys
 import re
 import subprocess
@@ -34,14 +33,21 @@ GPU_DONE              = GPU_BASE + 0x34
 #   [6] param_wr_en
 
 
+def write_line(text):
+    sys.stdout.write("%s\n" % text)
+
+
 def regwrite(addr, value):
-    cmd = "regwrite 0x{:08x} 0x{:08x}".format(addr, value)
+    cmd = "regwrite 0x%08x 0x%08x" % (addr, value)
     subprocess.call(cmd, shell=True)
 
 
 def regread(addr):
-    cmd = "regread 0x{:08x}".format(addr)
-    out = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    cmd = "regread 0x%08x" % addr
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    out = proc.communicate()[0]
+    if not isinstance(out, str):
+        out = out.decode("utf-8")
     result = out.splitlines()[0] if out else ""
     m = re.match(r"Reg (0x[0-9a-f]+) \(\d+\):\s+(0x[0-9a-f]+) \(\d+\)", result, re.IGNORECASE)
     if m:
@@ -127,18 +133,18 @@ def cmd_dmem_read(addr):
     ctrl_set_bit(5, 0)
     lo = regread(GPU_DMEM_RDATA_LO_REG)
     hi = regread(GPU_DMEM_RDATA_HI_REG)
-    print("DMEM[{}] = {}{}".format(a, hi, lo))
+    write_line("DMEM[%s] = %s%s" % (a, hi, lo))
 
 
 def cmd_dbg():
-    print("PC:       {}".format(regread(GPU_PC_DBG_REG)))
-    print("IF_INSTR: {}".format(regread(GPU_IF_INSTR_REG)))
+    write_line("PC:       %s" % regread(GPU_PC_DBG_REG))
+    write_line("IF_INSTR: %s" % regread(GPU_IF_INSTR_REG))
 
 
 def cmd_allregs():
     cmd_dbg()
-    print("DMEM_RLO: {}".format(regread(GPU_DMEM_RDATA_LO_REG)))
-    print("DMEM_RHI: {}".format(regread(GPU_DMEM_RDATA_HI_REG)))
+    write_line("DMEM_RLO: %s" % regread(GPU_DMEM_RDATA_LO_REG))
+    write_line("DMEM_RHI: %s" % regread(GPU_DMEM_RDATA_HI_REG))
 
 
 def cmd_param_write(addr, hi, lo):
@@ -152,22 +158,22 @@ def cmd_param_write(addr, hi, lo):
 
 
 def cmd_done_check():
-    print("DONE: {}".format(regread(GPU_DONE)))
+    write_line("DONE: %s" % regread(GPU_DONE))
 
 
 def usage():
-    print("Usage: gpureg.py <cmd> [args]")
-    print("  Commands:")
-    print("    run <0|1>                                   set run")
-    print("    step                                        single step")
-    print("    pcreset                                     pc_reset_pulse")
-    print("    imem_write <addr> <wdata>                   program I-mem word")
-    print("    dmem_write <addr> <hi> <lo>                 program D-mem 64b")
-    print("    dmem_read <addr>                            read D-mem 64b via portB")
-    print("    dbg                                         print pc + if_instr")
-    print("    allregs                                     dump all hw regs")
-    print("    param_write <addr> <hi> <lo>                program param_write 64b")
-    print("    done_check                                  check done register")
+    write_line("Usage: gpureg.py <cmd> [args]")
+    write_line("  Commands:")
+    write_line("    run <0|1>                                   set run")
+    write_line("    step                                        single step")
+    write_line("    pcreset                                     pc_reset_pulse")
+    write_line("    imem_write <addr> <wdata>                   program I-mem word")
+    write_line("    dmem_write <addr> <hi> <lo>                 program D-mem 64b")
+    write_line("    dmem_read <addr>                            read D-mem 64b via portB")
+    write_line("    dbg                                         print pc + if_instr")
+    write_line("    allregs                                     dump all hw regs")
+    write_line("    param_write <addr> <hi> <lo>                program param_write 64b")
+    write_line("    done_check                                  check done register")
 
 
 def run_command(args):
@@ -208,7 +214,7 @@ def run_command(args):
     elif cmd == "done_check":
         cmd_done_check()
     else:
-        print("Unrecognized command: {}".format(cmd))
+        write_line("Unrecognized command: %s" % cmd)
         usage()
         return 1
     return 0
