@@ -6,11 +6,6 @@ import subprocess
 
 GPU_BASE = 0x2000000
 
-try:
-    INTEGER_TYPES = (int, long)
-except NameError:
-    INTEGER_TYPES = (int,)
-
 # SW regs
 GPU_CTRL_REG          = GPU_BASE + 0x0
 GPU_IMEM_ADDR_REG     = GPU_BASE + 0x4
@@ -79,8 +74,6 @@ def ctrl_pulse_bit(bit):
 
 
 def normalize_number(s):
-    if isinstance(s, INTEGER_TYPES):
-        return str(s)
     return str(s).strip().replace("_", "")
 
 
