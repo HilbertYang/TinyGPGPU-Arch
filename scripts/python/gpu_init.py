@@ -18,10 +18,14 @@ def write_line(text):
     sys.stdout.write("%s\n" % text)
 
 
+def run_process(argv):
+    return subprocess.Popen(argv).wait()
+
+
 def run_cmd(argv):
     printable = " ".join(argv)
     write_line(">> %s" % printable)
-    if subprocess.call(argv) != 0:
+    if run_process(argv) != 0:
         raise SystemExit("Failed: %s" % printable)
 
 

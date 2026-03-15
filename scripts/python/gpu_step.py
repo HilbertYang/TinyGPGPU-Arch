@@ -11,6 +11,10 @@ def write_line(text):
     sys.stdout.write("%s\n" % text)
 
 
+def run_process(argv):
+    return subprocess.Popen(argv).wait()
+
+
 try:
     input_func = raw_input
 except NameError:
@@ -19,7 +23,7 @@ except NameError:
 
 def g(*args):
     argv = [PYTHON, GPUREG] + list(args)
-    if subprocess.call(argv) != 0:
+    if run_process(argv) != 0:
         raise SystemExit("Failed: %s" % " ".join(argv))
 
 

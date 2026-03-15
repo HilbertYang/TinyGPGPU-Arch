@@ -37,18 +37,45 @@ def write_line(text):
     sys.stdout.write("%s\n" % text)
 
 
+def decode_text(blob):
+    if isinstance(blob, str):
+        return blob
+    return blob.decode("utf-8")
+
+
+def run_shell(cmd):
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = proc.communicate()
+    return proc.returncode, decode_text(out), decode_text(err)
+
+
+def fail_cmd(cmd, out, err):
+    details = []
+    if out:
+        details.append(out.strip())
+    if err:
+        details.append(err.strip())
+    if details:
+        raise SystemExit("Command failed: %s\n%s" % (cmd, "\n".join(details)))
+    raise SystemExit("Command failed: %s" % cmd)
+
+
 def regwrite(addr, value):
     cmd = "regwrite 0x%08x 0x%08x" % (addr, value)
-    subprocess.call(cmd, shell=True)
+    rc, out, err = run_shell(cmd)
+    if rc != 0:
+        fail_cmd(cmd, out, err)
 
 
 def regread(addr):
     cmd = "regread 0x%08x" % addr
-    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    out = proc.communicate()[0]
-    if not isinstance(out, str):
-        out = out.decode("utf-8")
-    result = out.splitlines()[0] if out else ""
+    rc, out, err = run_shell(cmd)
+    if rc != 0:
+        fail_cmd(cmd, out, err)
+    if out:
+        result = out.splitlines()[0]
+    else:
+        result = ""
     m = re.match(r"Reg (0x[0-9a-f]+) \(\d+\):\s+(0x[0-9a-f]+) \(\d+\)", result, re.IGNORECASE)
     if m:
         return m.group(2)
@@ -83,6 +110,24 @@ def normalize_number(s):
     return str(s).strip().replace("_", "")
 
 
+def format_hex_groups(token):
+    text = str(token).strip()
+    prefix = ""
+    body = text
+    if len(body) >= 2 and (body[:2] == "0x" or body[:2] == "0X"):
+        prefix = body[:2]
+        body = body[2:]
+    body = body.replace("_", "")
+    if not body:
+        return text
+    groups = []
+    idx = 0
+    while idx < len(body):
+        groups.append(body[idx:idx + 4])
+        idx += 4
+    return prefix + " ".join(groups)
+
+
 def parse_int(s):
     return int(normalize_number(s), 0)
 
@@ -95,7 +140,10 @@ def parse_word(s):
 
 
 def cmd_run(on):
-    ctrl_set_bit(0, 1 if on else 0)
+    if on:
+        ctrl_set_bit(0, 1)
+    else:
+        ctrl_set_bit(0, 0)
 
 
 def cmd_step():
@@ -133,7 +181,7 @@ def cmd_dmem_read(addr):
     ctrl_set_bit(5, 0)
     lo = regread(GPU_DMEM_RDATA_LO_REG)
     hi = regread(GPU_DMEM_RDATA_HI_REG)
-    write_line("DMEM[%s] = %s%s" % (a, hi, lo))
+    write_line("DMEM[%s] = hi=%s  low=%s" % (a, format_hex_groups(hi), format_hex_groups(lo)))
 
 
 def cmd_dbg():
