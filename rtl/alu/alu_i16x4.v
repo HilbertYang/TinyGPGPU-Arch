@@ -30,8 +30,8 @@ module alu_i16x4(
     localparam OP_MAX_I16  = 5'h02;
     localparam OP_ADD64    = 5'h03;
     localparam OP_SETP_GE  = 5'h04;
-    localparam OP_SHIFTLV  = 5'h05;
-    localparam OP_SHIFTRV  = 5'h06;
+    localparam OP_SHIFTL16 = 5'h05;
+    localparam OP_SHIFTR16 = 5'h06;
 
     reg signed [15:0] r0, r1, r2, r3;
 
@@ -74,12 +74,12 @@ module alu_i16x4(
                 y = 64'd0;
             end
 
-            OP_SHIFTLV: begin
-                y = a;
+            OP_SHIFTL16: begin
+                y = a << 16;   // fixed 16-bit left shift (lane 0 zeroed, lanes shift up)
             end
 
-            OP_SHIFTRV: begin
-                y = a;
+            OP_SHIFTR16: begin
+                y = a >> 16;   // fixed 16-bit logical right shift (lane 3 zeroed, lanes shift down)
             end
 
             default: begin

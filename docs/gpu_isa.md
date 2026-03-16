@@ -21,8 +21,8 @@ This document describes the ISA as implemented by the current maintained RTL. If
 | 00100 | 0x04 | ADD64     | `RD = RS1 + RS2` |
 | 00101 | 0x05 | ADDI64    | `RD = RS1 + sign_ext(imm15)` |
 | 00110 | 0x06 | SETP_GE   | `PRED = (RS1[31:0] >= RS2[31:0])` |
-| 00111 | 0x07 | SHIFTLV   | Decoded by the control path; current ALU implementation passes `RS1` through unchanged |
-| 01000 | 0x08 | SHIFTRV   | Decoded by the control path; current ALU implementation passes `RS1` through unchanged |
+| 00111 | 0x07 | SHIFTL16  | `RD = RS1 << 16` (fixed 16-bit left shift; lane 0 zeroed, upper lanes shift up) |
+| 01000 | 0x08 | SHIFTR16  | `RD = RS1 >> 16` (fixed 16-bit logical right shift; lane 3 zeroed, lower lanes shift down) |
 | 01001 | 0x09 | MAC_BF16  | `RD[4xbf16] = RS1[4xbf16] * RS2[4xbf16] + RD[4xbf16]` |
 | 01010 | 0x0A | MUL_BF16  | `RD[4xbf16] = RS1[4xbf16] * RS2[4xbf16]` |
 | 10000 | 0x10 | LD64      | `RD = DMEM[RS1 + imm15]` |
@@ -89,7 +89,7 @@ This document describes the ISA as implemented by the current maintained RTL. If
 
 | wb_sel | Source      | Used by |
 |--------|-------------|---------|
-| 2'd0   | ALU result  | `ADD_I16`, `SUB_I16`, `MAX_I16`, `ADD64`, `ADDI64`, `SETP_GE`, `SHIFTLV`, `SHIFTRV` |
+| 2'd0   | ALU result  | `ADD_I16`, `SUB_I16`, `MAX_I16`, `ADD64`, `ADDI64`, `SETP_GE`, `SHIFTL16`, `SHIFTR16` |
 | 2'd1   | Tensor core | `MUL_BF16`, `MAC_BF16` |
 | 2'd2   | D-MEM read  | `LD64` |
 | 2'd3   | IMM / PARAM | `MOV`, `LD_PARAM` |

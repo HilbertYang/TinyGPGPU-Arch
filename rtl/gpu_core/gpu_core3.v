@@ -25,8 +25,8 @@
 //   ADD64    = 5'h04  RD = RS1 + RS2 (64-bit)
 //   ADDI64   = 5'h05  RD = RS1 + sign_ext(imm15)
 //   SETP_GE  = 5'h06  PRED = (RS1[31:0] >= RS2[31:0])
-//   SHIFTLV  = 5'h07  RD = RS1  <<< imm15; //NO USE now is RD = RS1!
-//   SHIFTRV  = 5'h08. RD = RS1  >>> imm15; //NO USE now is RD = RS1!
+//   SHIFTL16 = 5'h07  RD = RS1 << 16  (fixed 16-bit left shift)
+//   SHIFTR16 = 5'h08  RD = RS1 >> 16  (fixed 16-bit logical right shift)
 //   MAC_BF16 = 5'h09  RD[4xbf16] = RS1 * RS2 + RS3(=RD)
 //   MUL_BF16 = 5'h0a  RD[4xbf16] = RS1 * RS2
 //   LD64     = 5'h10  RD = DMEM[RS1 + imm15]
@@ -76,8 +76,8 @@ module gpu_core (
     localparam OP_ADD64    = 5'h04;
     localparam OP_ADDI64   = 5'h05;
     localparam OP_SETP_GE  = 5'h06;
-    localparam OP_SHIFTLV  = 5'h07;
-    localparam OP_SHIFTRV  = 5'h08;
+    localparam OP_SHIFTL16 = 5'h07;
+    localparam OP_SHIFTR16 = 5'h08;
     localparam OP_MAC_BF16 = 5'h09;
     localparam OP_MUL_BF16 = 5'h0a;
     localparam OP_LD64     = 5'h10;
@@ -350,7 +350,7 @@ module gpu_core (
     //==========================================================
     // EX stage
     //==========================================================
-    // sign-extend imm15 to 64 bits for ADDI64/SHIFTLV/SHIFTRV
+    // sign-extend imm15 to 64 bits for ADDI64
     wire [63:0] ex_imm64 = {{49{idex_imm15[14]}}, idex_imm15};
 
     //tensor core x4
