@@ -20,6 +20,12 @@
 //   ST64 R3, R7   / NOP×3 / RET
 //   Expected: DMEM[12] = 64'h4140_4140_4140_4140
 //
+// ── TEST 3: SHIFTL16 + SHIFTR16 ───────────────────────────────────
+//   Pre-load DMEM[13] = 64'h8004_0003_0002_0001
+//   SHIFTL16 R2, R1  → 64'h0003_0002_0001_0000
+//   SHIFTR16 R3, R1  → 64'h0000_8004_0003_0002
+//   Store to DMEM[14] and DMEM[15]
+//
 `timescale 1ns/1ps
 
 module tb_gpu_core3;
@@ -92,6 +98,8 @@ module tb_gpu_core3;
     localparam [4:0]
         OP_NOP      = 5'h00,
         OP_ADD_I16  = 5'h01,
+        OP_SHIFTL16 = 5'h07,
+        OP_SHIFTR16 = 5'h08,
         OP_MAC_BF16 = 5'h09,
         OP_MUL_BF16 = 5'h0a,
         OP_LD64     = 5'h10,
@@ -270,6 +278,56 @@ module tb_gpu_core3;
     endtask
 
     // -------------------------------------------------------
+    // Test 3: SHIFTL16 + SHIFTR16
+    // -------------------------------------------------------
+    task load_test3;
+        begin
+            // PC  0: MOV R5, 13  (word addr of DMEM[13])
+            imem_write(9'd0,  ENC(OP_MOV,      4'd5, 4'd0, 4'd0, 15'd13));
+            imem_write(9'd1,  NOP);
+            imem_write(9'd2,  NOP);
+            imem_write(9'd3,  NOP);
+            // PC  4: LD64 R1, R5  → R1 = DMEM[13]
+            imem_write(9'd4,  ENC(OP_LD64,     4'd1, 4'd5, 4'd0, 15'd0));
+            imem_write(9'd5,  NOP);
+            imem_write(9'd6,  NOP);
+            imem_write(9'd7,  NOP);
+            // PC  8: SHIFTL16 R2, R1
+            imem_write(9'd8,  ENC(OP_SHIFTL16, 4'd2, 4'd1, 4'd0, 15'd0));
+            imem_write(9'd9,  NOP);
+            imem_write(9'd10, NOP);
+            imem_write(9'd11, NOP);
+            // PC 12: SHIFTR16 R3, R1
+            imem_write(9'd12, ENC(OP_SHIFTR16, 4'd3, 4'd1, 4'd0, 15'd0));
+            imem_write(9'd13, NOP);
+            imem_write(9'd14, NOP);
+            imem_write(9'd15, NOP);
+            // PC 16: MOV R6, 14  (left-shift output word addr)
+            imem_write(9'd16, ENC(OP_MOV,      4'd6, 4'd0, 4'd0, 15'd14));
+            imem_write(9'd17, NOP);
+            imem_write(9'd18, NOP);
+            imem_write(9'd19, NOP);
+            // PC 20: MOV R7, 15  (right-shift output word addr)
+            imem_write(9'd20, ENC(OP_MOV,      4'd7, 4'd0, 4'd0, 15'd15));
+            imem_write(9'd21, NOP);
+            imem_write(9'd22, NOP);
+            imem_write(9'd23, NOP);
+            // PC 24: ST64 R2, R6  → DMEM[14] = left-shift result
+            imem_write(9'd24, ENC(OP_ST64,     4'd2, 4'd6, 4'd0, 15'd0));
+            imem_write(9'd25, NOP);
+            imem_write(9'd26, NOP);
+            imem_write(9'd27, NOP);
+            // PC 28: ST64 R3, R7  → DMEM[15] = right-shift result
+            imem_write(9'd28, ENC(OP_ST64,     4'd3, 4'd7, 4'd0, 15'd0));
+            imem_write(9'd29, NOP);
+            imem_write(9'd30, NOP);
+            imem_write(9'd31, NOP);
+            // PC 32: RET
+            imem_write(9'd32, ENC(OP_RET,      4'd0, 4'd0, 4'd0, 15'd0));
+        end
+    endtask
+
+    // -------------------------------------------------------
     // Main
     // -------------------------------------------------------
     initial begin
@@ -315,6 +373,22 @@ module tb_gpu_core3;
         reset_pc;
         run_until_done(300);
         dmem_check(8'd12, 64'h4140_4140_4140_4140);
+
+        // ========================================================
+        // TEST 3: fixed 16-bit cross-lane shifts
+        //   DMEM[13] = 64'h8004_0003_0002_0001
+        //   SHIFTL16 result stored to DMEM[14]
+        //   SHIFTR16 result stored to DMEM[15]
+        // ========================================================
+        $display("\n=== TEST 3: SHIFTL16 + SHIFTR16 ===");
+
+        dmem_write(8'd13, 64'h8004_0003_0002_0001);
+
+        load_test3;
+        reset_pc;
+        run_until_done(350);
+        dmem_check(8'd14, 64'h0003_0002_0001_0000);
+        dmem_check(8'd15, 64'h0000_8004_0003_0002);
 
         $display("\n=== ALL TESTS COMPLETE ===");
         $finish;

@@ -1,8 +1,7 @@
 // alu_i16x4.v
 // 4-lane 16-bit integer ALU
-// Handles: ADD_I16, SUB_I16, MAX_I16 (ReLU = MAX with 0)
-// Also handles 64-bit address arithmetic (ADD64, ADDI64, MUL_WIDE)
-// and SETP_GE for predicate generation
+// Handles: ADD_I16, SUB_I16, MAX_I16 (ReLU = MAX with 0), ADD64,
+// SETP_GE for predicate generation, and fixed 16-bit cross-lane shifts.
 
 module alu_i16x4(
     input  wire [63:0] a,        
