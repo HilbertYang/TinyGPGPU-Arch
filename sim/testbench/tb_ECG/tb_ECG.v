@@ -532,6 +532,8 @@ module tb_gpu_core3;
         imem_write(9'd31, ENC(OP_ST64,     4'd13, 4'd7, 4'd0, 15'd0));
         // addr 32: RET
         imem_write(9'd32, ENC(OP_RET,      4'd0,  4'd0, 4'd0, 15'd0));
+        // drain remaining instructions with NOPs
+        imem_write(9'd33, NOP);
         end
     endtask
 
