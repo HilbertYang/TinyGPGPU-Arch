@@ -42,13 +42,17 @@ The design targets the NetFPGA platform and uses a simple single-stream control 
 
 1. Modify or inspect the RTL under `rtl/`.
 2. Validate behavior with the testbenches in `sim/testbench/` using Vivado.
-3. Use the maintained helpers under `scripts/python/` or `scripts/perl/` for register-level bring-up and loading sample programs.
-4. Treat `kernels/`, `compiler/`, and `gen/` as reference or archival material unless separately re-validated.
+3. Start with lightweight unit coverage in `sim/testbench/tb_alu/`, then move to `sim/testbench/tb_gpu_core/` for pipeline and sample-program checks.
+4. Use `sim/testbench/tb_ECG/` for the most application-like end-to-end BF16 validation flow currently in the repository.
+5. Use the maintained helpers under `scripts/python/` or `scripts/perl/` for register-level bring-up and loading sample programs.
+6. Use small utilities under `sim/script/` for BF16 conversion or simulation-log cleanup when inspecting results.
+7. Treat `kernels/`, `compiler/`, and `gen/` as reference or archival material unless separately re-validated.
 
 ## Project Structure
 
 - `/rtl`: Current hardware implementation
 - `/sim/testbench`: Maintained Verilog testbenches
+- `/sim/script`: Small simulation utilities such as BF16 conversion and log cleanup
 - `/scripts/python`: Python bring-up and stepping helpers
 - `/scripts/perl`: Perl bring-up and stepping helpers
 - `/docs`: ISA and architecture notes
@@ -60,3 +64,11 @@ The design targets the NetFPGA platform and uses a simple single-stream control 
 ## Design Notes
 
 The project leans into SIMD over SIMT to keep the architecture practical on resource-constrained FPGA fabric. BF16 support is included to make multiply and MAC-heavy workloads cheaper in hardware while still preserving enough numeric range for accelerator-style experimentation.
+
+## Maintained Validation Entry Points
+
+- `sim/testbench/tb_alu/tb_alu_i16x4.v`: fast ALU-focused SIMD unit coverage
+- `sim/testbench/tb_gpu_core/tb_gpu_core3_basic.v`: maintained full-pipeline smoke test
+- `sim/testbench/tb_gpu_core/tb_gpu_top.v`: top-level programming, memory timing, and `start/done` bring-up reference
+- `sim/testbench/tb_gpu_core/tb_gpu_core3_*_sample*.v`: sample-program-oriented ADD / MUL / FMA / SHIFT coverage
+- `sim/testbench/tb_ECG/tb_ECG.v`: application-style 4-lane BF16 classifier validation with bundled feature and weight data
