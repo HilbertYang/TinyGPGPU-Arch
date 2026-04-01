@@ -15,7 +15,6 @@
 #   P1=0  (base_X), P2=64 (base_W1), P3=128 (base_W2),
 #   P4=64 (loop count), P5=192 (bias1 addr), P6=193 (bias2 addr),
 #   P7=194 (logit1 store addr)  -- logit2 addr = P7+1 computed in-kernel
-from __future__ import print_function
 import os
 import subprocess
 import sys
