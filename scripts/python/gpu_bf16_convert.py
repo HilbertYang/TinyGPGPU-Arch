@@ -51,11 +51,15 @@ def float_to_float32_bits(value):
     if math.isnan(value):
         return 0x7FC00000
     if math.isinf(value):
-        return 0x7F800000 if value > 0 else 0xFF800000
+        if value > 0:
+            return 0x7F800000
+        return 0xFF800000
     try:
         return struct.unpack(">I", struct.pack(">f", value))[0]
     except OverflowError:
-        return 0x7F800000 if value > 0 else 0xFF800000
+        if value > 0:
+            return 0x7F800000
+        return 0xFF800000
 
 
 def float_to_bf16_bits(value):
@@ -76,7 +80,9 @@ def format_decimal(value):
     if math.isnan(value):
         return "nan"
     if math.isinf(value):
-        return "inf" if value > 0 else "-inf"
+        if value > 0:
+            return "inf"
+        return "-inf"
     return "%.9g" % value
 
 
@@ -123,11 +129,17 @@ def main():
             if opts.to_dec:
                 normalized = normalize_bf16_token(token)
                 converted  = format_decimal(bf16_to_float(normalized))
-                output = converted if opts.plain else "%s -> %s" % (normalized, converted)
+                if opts.plain:
+                    output = converted
+                else:
+                    output = "%s -> %s" % (normalized, converted)
             else:
                 decimal_value = float(token.strip().replace("_", ""))
                 converted     = "%04x" % float_to_bf16_bits(decimal_value)
-                output = converted if opts.plain else "%s -> %s" % (token, converted)
+                if opts.plain:
+                    output = converted
+                else:
+                    output = "%s -> %s" % (token, converted)
 
             sys.stdout.write(output + "\n")
 
