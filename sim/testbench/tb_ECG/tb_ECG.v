@@ -11,8 +11,10 @@
 //   [  0.. 63]  features:  DMEM[i] = {X4[i], X3[i], X2[i], X1[i]}
 //   [ 64..127]  W1:        DMEM[64+i] = {W1[i], W1[i], W1[i], W1[i]}
 //   [128..191]  W2:        DMEM[128+i] = {W2[i], W2[i], W2[i], W2[i]}
-//   [192]       bias1 x4   (becomes logit1 after computation)
-//   [193]       bias2 x4   (becomes logit2 after computation)
+//   [192]       bias1 x4   (read-only during inference, preserved)
+//   [193]       bias2 x4   (read-only during inference, preserved)
+//   [194]       logit1 x4  (written after dot-product loop)
+//   [195]       logit2 x4  (written after dot-product loop)
 //
 // Computation: 4 beats processed in parallel via SIMD lanes
 //   Beat1 in lane0 [15:0], Beat2 in lane1 [31:16],
@@ -413,9 +415,12 @@ module tb_gpu_core3;
         dmem_write(8'd189, 64'hBF07BF07BF07BF07); // W2[61]=BF07
         dmem_write(8'd190, 64'hBEC9BEC9BEC9BEC9); // W2[62]=BEC9
         dmem_write(8'd191, 64'h3F2A3F2A3F2A3F2A); // W2[63]=3F2A
-        // --- Biases (initial accumulator values) ---
+        // --- Biases (read-only; accumulators initialised from these) ---
         dmem_write(8'd192, 64'hBE39BE39BE39BE39); // bias1=BE39 (-0.1807) x4
         dmem_write(8'd193, 64'h3E0E3E0E3E0E3E0E); // bias2=3E0E (+0.1387) x4
+        // --- Logit output slots (overwritten by epilogue ST64s) ---
+        dmem_write(8'd194, 64'h0000000000000000); // logit1 placeholder
+        dmem_write(8'd195, 64'h0000000000000000); // logit2 placeholder
         end
     endtask
 
@@ -427,8 +432,9 @@ module tb_gpu_core3;
     //   P2 =  64 : base address of W1 in DMEM
     //   P3 = 128 : base address of W2 in DMEM
     //   P4 =  64 : loop iteration count (64 feature dimensions)
-    //   P5 = 192 : DMEM address of bias1 / logit1 output
-    //   P6 = 193 : DMEM address of bias2 / logit2 output
+    //   P5 = 192 : DMEM address of bias1 (load only, preserved)
+    //   P6 = 193 : DMEM address of bias2 (load only, preserved)
+    //   P7 = 194 : DMEM address of logit1 output
     //
     // Register assignment:
     //   R1  : running pointer into feature array  (starts at 0)
@@ -436,8 +442,10 @@ module tb_gpu_core3;
     //   R3  : running pointer into W2 array       (starts at 128)
     //   R4  : loop limit (64)
     //   R5  : loop counter (0 -> 63)
-    //   R6  : DMEM address of logit1 slot (192)
-    //   R7  : DMEM address of logit2 slot (193)
+    //   R6  : DMEM address of bias1 slot (192, used for LD64 only)
+    //   R7  : DMEM address of bias2 slot (193, used for LD64 only)
+    //   R8  : DMEM address of logit1 output (194)
+    //   R9  : DMEM address of logit2 output (195, computed as R8+1)
     //   R10 : current X[i] (4 beats in SIMD lanes)
     //   R11 : current W1[i] (replicated across lanes)
     //   R12 : logit1 accumulator (initialised from bias1)
@@ -445,18 +453,20 @@ module tb_gpu_core3;
     //   R14 : current W2[i] (replicated across lanes)
     //
     // Instruction addresses:
-    //   0-11  : prologue (load params, init counter, load biases)
-    //   12-26 : main loop (15 instructions/iteration)
-    //   27-32 : epilogue (store logits, RET)
+    //   0-12  : prologue (load params, compute R9, load biases)
+    //   13-27 : main loop (15 instructions/iteration)
+    //   28-31 : epilogue (store logits, RET)
     //
     // Hazard analysis (write+4 rule, all accesses verified):
     //   LD_PARAM Rx @ addr N, first use at addr N+5 or later ✓
-    //   LD64 R10 @ addr 14, used @ addrs 21,22 (gap 6,7) ✓
-    //   LD64 R11 @ addr 15, used @ addr 21  (gap 5) ✓
-    //   LD64 R14 @ addr 16, used @ addr 22  (gap 5) ✓
-    //   MAC R12  @ addr 21, next read @ addr 21 (+15 instr) ✓
-    //   MAC R13  @ addr 22, next read @ addr 22 (+15 instr) ✓
+    //   ADDI64 R9  @ addr 10, used @ addr 29 (epilogue, gap>>4) ✓
+    //   LD64 R10 @ addr 15, used @ addrs 22,23 (gap 7,8) ✓
+    //   LD64 R11 @ addr 16, used @ addr 22  (gap 6) ✓
+    //   LD64 R14 @ addr 17, used @ addr 23  (gap 6) ✓
+    //   MAC R12  @ addr 22, next read @ addr 22 (+15 instr) ✓
+    //   MAC R13  @ addr 23, next read @ addr 23 (+15 instr) ✓
     //   Loop-exit path from last MAC to ST64: 10+ instructions ✓
+    //   ST64 R12@28 and ST64 R13@29 have no GPR-write hazard ✓
     // -------------------------------------------------------
     task load_ecg_program;
         begin
@@ -469,71 +479,73 @@ module tb_gpu_core3;
         imem_write(9'd2,  ENC(OP_LD_PARAM, 4'd3,  4'd0, 4'd0, 15'd3));
         // addr  3: R4  = P4 (loop limit = 64)
         imem_write(9'd3,  ENC(OP_LD_PARAM, 4'd4,  4'd0, 4'd0, 15'd4));
-        // addr  4: R6  = P5 (logit1 addr = 192)
+        // addr  4: R6  = P5 (bias1 load addr = 192)
         imem_write(9'd4,  ENC(OP_LD_PARAM, 4'd6,  4'd0, 4'd0, 15'd5));
-        // addr  5: R7  = P6 (logit2 addr = 193)
+        // addr  5: R7  = P6 (bias2 load addr = 193)
         imem_write(9'd5,  ENC(OP_LD_PARAM, 4'd7,  4'd0, 4'd0, 15'd6));
-        // addr  6: R5  = 0  (loop counter)
-        imem_write(9'd6,  ENC(OP_MOV,      4'd5,  4'd0, 4'd0, 15'd0));
-        // addr  7-9: NOPs (wait for R6, R7 to settle; R6@4 needs gap>=3, R7@5 needs gap>=3)
-        imem_write(9'd7,  NOP);
+        // addr  6: R8  = P7 (logit1 store addr = 194)
+        imem_write(9'd6,  ENC(OP_LD_PARAM, 4'd8,  4'd0, 4'd0, 15'd7));
+        // addr  7: R5  = 0  (loop counter; independent of above)
+        imem_write(9'd7,  ENC(OP_MOV,      4'd5,  4'd0, 4'd0, 15'd0));
+        // addr  8-9: NOPs (gap for R8@6 before ADDI64@10: gap=4 ✓)
         imem_write(9'd8,  NOP);
         imem_write(9'd9,  NOP);
-        // addr 10: R12 = DMEM[R6+0] = bias1 (initial logit1 accumulator)
-        //          R6 ready: written@4, consumer@10, gap=5 ✓
-        imem_write(9'd10, ENC(OP_LD64,     4'd12, 4'd6, 4'd0, 15'd0));
-        // addr 11: R13 = DMEM[R7+0] = bias2 (initial logit2 accumulator)
-        //          R7 ready: written@5, consumer@11, gap=5 ✓
-        imem_write(9'd11, ENC(OP_LD64,     4'd13, 4'd7, 4'd0, 15'd0));
+        // addr 10: R9  = R8+1 (logit2 store addr = 195)
+        //          R8 ready: written@6, consumer@10, gap=4 ✓
+        imem_write(9'd10, ENC(OP_ADDI64,   4'd9,  4'd8, 4'd0, 15'd1));
+        // addr 11: R12 = DMEM[R6+0] = bias1 (logit1 accumulator)
+        //          R6 ready: written@4, consumer@11, gap=7 ✓
+        imem_write(9'd11, ENC(OP_LD64,     4'd12, 4'd6, 4'd0, 15'd0));
+        // addr 12: R13 = DMEM[R7+0] = bias2 (logit2 accumulator)
+        //          R7 ready: written@5, consumer@12, gap=7 ✓
+        imem_write(9'd12, ENC(OP_LD64,     4'd13, 4'd7, 4'd0, 15'd0));
 
-        // --- Loop top = addr 12 ---
-        // addr 12: predicate = (R5 >= R4)
-        imem_write(9'd12, ENC(OP_SETP_GE,  4'd0,  4'd5, 4'd4, 15'd0));
-        // addr 13: if predicate, branch to done (addr 27)
-        imem_write(9'd13, ENC(OP_BPR,      4'd0,  4'd0, 4'd0, 15'd27));
-        // addr 14-16: branch delay slots (execute regardless of BPR outcome)
-        // addr 14: R10 = DMEM[R1+0] = X[i]
-        imem_write(9'd14, ENC(OP_LD64,     4'd10, 4'd1, 4'd0, 15'd0));
-        // addr 15: R11 = DMEM[R2+0] = W1[i]
-        imem_write(9'd15, ENC(OP_LD64,     4'd11, 4'd2, 4'd0, 15'd0));
-        // addr 16: R14 = DMEM[R3+0] = W2[i]
-        imem_write(9'd16, ENC(OP_LD64,     4'd14, 4'd3, 4'd0, 15'd0));
-        // addr 17: R1++  (advance feature pointer)
-        imem_write(9'd17, ENC(OP_ADDI64,   4'd1,  4'd1, 4'd0, 15'd1));
-        // addr 18: R2++  (advance W1 pointer)
-        imem_write(9'd18, ENC(OP_ADDI64,   4'd2,  4'd2, 4'd0, 15'd1));
-        // addr 19: R3++  (advance W2 pointer)
-        imem_write(9'd19, ENC(OP_ADDI64,   4'd3,  4'd3, 4'd0, 15'd1));
-        // addr 20: R5++  (increment loop counter)
-        imem_write(9'd20, ENC(OP_ADDI64,   4'd5,  4'd5, 4'd0, 15'd1));
-        // addr 21: R12 += R10 * R11  (logit1 += X[i] * W1[i])
-        //          R10@14 gap=6, R11@15 gap=5, R12(acc) gap>=14 ✓
-        imem_write(9'd21, ENC(OP_MAC_BF16, 4'd12, 4'd10, 4'd11, 15'd0));
-        // addr 22: R13 += R10 * R14  (logit2 += X[i] * W2[i])
-        //          R10@14 gap=7, R14@16 gap=5, R13(acc) gap>=14 ✓
-        //          No dependency on R12 result at addr 21 ✓
-        imem_write(9'd22, ENC(OP_MAC_BF16, 4'd13, 4'd10, 4'd14, 15'd0));
-        // addr 23: branch back to loop top
-        imem_write(9'd23, ENC(OP_BR,       4'd0,  4'd0, 4'd0, 15'd12));
-        // addr 24-26: branch delay slots
-        imem_write(9'd24, NOP);
+        // --- Loop top = addr 13 ---
+        // addr 13: predicate = (R5 >= R4)
+        imem_write(9'd13, ENC(OP_SETP_GE,  4'd0,  4'd5, 4'd4, 15'd0));
+        // addr 14: if predicate, branch to done (addr 28)
+        imem_write(9'd14, ENC(OP_BPR,      4'd0,  4'd0, 4'd0, 15'd28));
+        // addr 15-17: branch delay slots (execute regardless of BPR outcome)
+        // addr 15: R10 = DMEM[R1+0] = X[i]
+        imem_write(9'd15, ENC(OP_LD64,     4'd10, 4'd1, 4'd0, 15'd0));
+        // addr 16: R11 = DMEM[R2+0] = W1[i]
+        imem_write(9'd16, ENC(OP_LD64,     4'd11, 4'd2, 4'd0, 15'd0));
+        // addr 17: R14 = DMEM[R3+0] = W2[i]
+        imem_write(9'd17, ENC(OP_LD64,     4'd14, 4'd3, 4'd0, 15'd0));
+        // addr 18: R1++  (advance feature pointer)
+        imem_write(9'd18, ENC(OP_ADDI64,   4'd1,  4'd1, 4'd0, 15'd1));
+        // addr 19: R2++  (advance W1 pointer)
+        imem_write(9'd19, ENC(OP_ADDI64,   4'd2,  4'd2, 4'd0, 15'd1));
+        // addr 20: R3++  (advance W2 pointer)
+        imem_write(9'd20, ENC(OP_ADDI64,   4'd3,  4'd3, 4'd0, 15'd1));
+        // addr 21: R5++  (increment loop counter)
+        imem_write(9'd21, ENC(OP_ADDI64,   4'd5,  4'd5, 4'd0, 15'd1));
+        // addr 22: R12 += R10 * R11  (logit1 += X[i] * W1[i])
+        //          R10@15 gap=7, R11@16 gap=6, R12(acc) gap>=10 ✓
+        imem_write(9'd22, ENC(OP_MAC_BF16, 4'd12, 4'd10, 4'd11, 15'd0));
+        // addr 23: R13 += R10 * R14  (logit2 += X[i] * W2[i])
+        //          R10@15 gap=8, R14@17 gap=6, R13(acc) gap>=11 ✓
+        //          No dependency on R12 result at addr 22 ✓
+        imem_write(9'd23, ENC(OP_MAC_BF16, 4'd13, 4'd10, 4'd14, 15'd0));
+        // addr 24: branch back to loop top
+        imem_write(9'd24, ENC(OP_BR,       4'd0,  4'd0, 4'd0, 15'd13));
+        // addr 25-27: branch delay slots
         imem_write(9'd25, NOP);
         imem_write(9'd26, NOP);
+        imem_write(9'd27, NOP);
 
-        // --- Epilogue (done = addr 27) ---
-        // R12 valid here: last MAC@21, exit path has 10+ instructions gap ✓
-        // addr 27: DMEM[R6+0] = R12  (write logit1 result back to DMEM[192])
-        imem_write(9'd27, ENC(OP_ST64,     4'd12, 4'd6, 4'd0, 15'd0));
-        imem_write(9'd28, NOP);
-        imem_write(9'd29, NOP);
-        imem_write(9'd30, NOP);
-        // R13 valid here: last MAC@22, exit path has 13+ instructions gap ✓
-        // addr 31: DMEM[R7+0] = R13  (write logit2 result back to DMEM[193])
-        imem_write(9'd31, ENC(OP_ST64,     4'd13, 4'd7, 4'd0, 15'd0));
-        // addr 32: RET
-        imem_write(9'd32, ENC(OP_RET,      4'd0,  4'd0, 4'd0, 15'd0));
-        // drain remaining instructions with NOPs
-        imem_write(9'd33, NOP);
+        // --- Epilogue (done = addr 28) ---
+        // Exit path: last MAC R12@22 → 23→24→25→26→27→13→14→15→16→17→28 (gap=10) ✓
+        // addr 28: DMEM[R8+0] = R12  (write logit1 to DMEM[194])
+        imem_write(9'd28, ENC(OP_ST64,     4'd12, 4'd8, 4'd0, 15'd0));
+        // Exit path: last MAC R13@23 → same path → 29 (gap=11) ✓
+        // ST64 is not a GPR write; no hazard between addr 28 and 29 ✓
+        // addr 29: DMEM[R9+0] = R13  (write logit2 to DMEM[195])
+        imem_write(9'd29, ENC(OP_ST64,     4'd13, 4'd9, 4'd0, 15'd0));
+        // addr 30: RET
+        imem_write(9'd30, ENC(OP_RET,      4'd0,  4'd0, 4'd0, 15'd0));
+        // drain remaining instructions with NOP
+        imem_write(9'd31, NOP);
         end
     endtask
 
@@ -560,8 +572,10 @@ module tb_gpu_core3;
 
         // --------------------------------------------------
         // 2. Set kernel parameters
-        //    P1=0 (base X), P2=64 (base W1), P3=128 (base W2)
-        //    P4=64 (loop count), P5=192 (logit1 addr), P6=193 (logit2 addr)
+        //    P1=0   (base X),    P2=64  (base W1),  P3=128 (base W2)
+        //    P4=64  (loop count),P5=192 (bias1 load addr)
+        //    P6=193 (bias2 load addr), P7=194 (logit1 store addr)
+        //    logit2 store addr (195) computed as P7+1 inside program
         // --------------------------------------------------
         param_write(3'd1, 64'd0);
         param_write(3'd2, 64'd64);
@@ -569,6 +583,7 @@ module tb_gpu_core3;
         param_write(3'd4, 64'd64);
         param_write(3'd5, 64'd192);
         param_write(3'd6, 64'd193);
+        param_write(3'd7, 64'd194);
 
         // --------------------------------------------------
         // 3. Load and run the classifier program
@@ -579,22 +594,30 @@ module tb_gpu_core3;
 
         // --------------------------------------------------
         // 4. Check results
-        //    DMEM[192] = {logit1_beat4, logit1_beat3, logit1_beat2, logit1_beat1}
-        //    DMEM[193] = {logit2_beat4, logit2_beat3, logit2_beat2, logit2_beat1}
         //
-        //    Expected BF16 logit values (RTL-faithful simulation):
-        //      Beat1: logit1 = C0D9 (-6.7812),  logit2 = 40EA (+7.3125)
-        //      Beat2: logit1 = 4066 (+3.5938),  logit2 = C05A (-3.4062)
-        //      Beat3: logit1 = C0D5 (-6.6562),  logit2 = 40E7 (+7.2188)
-        //      Beat4: logit1 = 4073 (+3.7969),  logit2 = C05F (-3.4844)
+        //    Bias slots must be unchanged:
+        //      DMEM[192] = bias1 x4 = BE39_BE39_BE39_BE39
+        //      DMEM[193] = bias2 x4 = 3E0E_3E0E_3E0E_3E0E
+        //
+        //    Logit outputs (RTL-faithful BF16 simulation of tensor16_pipe3):
+        //      DMEM[194] = {logit1_beat4, logit1_beat3, logit1_beat2, logit1_beat1}
+        //      DMEM[195] = {logit2_beat4, logit2_beat3, logit2_beat2, logit2_beat1}
+        //        Beat1: logit1 = C0D9 (-6.7812),  logit2 = 40EA (+7.3125)
+        //        Beat2: logit1 = 4066 (+3.5938),  logit2 = C05A (-3.4062)
+        //        Beat3: logit1 = C0D5 (-6.6562),  logit2 = 40E7 (+7.2188)
+        //        Beat4: logit1 = 4073 (+3.7969),  logit2 = C05F (-3.4844)
         //    Predicted class: argmax(logit1, logit2)
-        //      Beat1: class 1 (logit2 > logit1)
-        //      Beat2: class 0 (logit1 > logit2)
-        //      Beat3: class 1 (logit2 > logit1)
-        //      Beat4: class 0 (logit1 > logit2)
+        //        Beat1: class 1 (logit2 > logit1)
+        //        Beat2: class 0 (logit1 > logit2)
+        //        Beat3: class 1 (logit2 > logit1)
+        //        Beat4: class 0 (logit1 > logit2)
         // --------------------------------------------------
-        dmem_check(8'd192, 64'h4073C0D54066C0D9); // logit1 all beats
-        dmem_check(8'd193, 64'hC05F40E7C05A40EA); // logit2 all beats
+        // Verify biases are untouched
+        dmem_check(8'd192, 64'hBE39BE39BE39BE39); // bias1 preserved
+        dmem_check(8'd193, 64'h3E0E3E0E3E0E3E0E); // bias2 preserved
+        // Verify computed logits
+        dmem_check(8'd194, 64'h4073C0D54066C0D9); // logit1 all beats
+        dmem_check(8'd195, 64'hC05F40E7C05A40EA); // logit2 all beats
 
         $display("\n=== ALL TESTS COMPLETE ===");
         $finish;
