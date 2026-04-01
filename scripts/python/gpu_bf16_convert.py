@@ -14,10 +14,17 @@
 #   bf16_convert.py --to-bf16 1.0 -1.0 3.14
 #   echo "3F80 4000" | bf16_convert.py --to-dec --plain
 
-import math
 import struct
 import sys
 from optparse import OptionParser
+
+
+def _isnan(x):
+    return x != x
+
+
+def _isinf(x):
+    return x != 0.0 and x == x and x * 2.0 == x
 
 
 def normalize_bf16_token(token):
@@ -48,9 +55,9 @@ def bf16_to_float(token):
 
 
 def float_to_float32_bits(value):
-    if math.isnan(value):
+    if _isnan(value):
         return 0x7FC00000
-    if math.isinf(value):
+    if _isinf(value):
         if value > 0:
             return 0x7F800000
         return 0xFF800000
@@ -77,9 +84,9 @@ def float_to_bf16_bits(value):
 
 
 def format_decimal(value):
-    if math.isnan(value):
+    if _isnan(value):
         return "nan"
-    if math.isinf(value):
+    if _isinf(value):
         if value > 0:
             return "inf"
         return "-inf"
@@ -99,8 +106,7 @@ def read_tokens(values):
 
 def main():
     parser = OptionParser(
-        usage="%prog --to-dec|--to-bf16 [--plain] [values ...]",
-        description="Convert BF16 hex values and decimal numbers."
+        usage="%prog --to-dec|--to-bf16 [--plain] [values ...]"
     )
     parser.add_option("--to-dec",  dest="to_dec",  action="store_true",
                       default=False,
@@ -121,7 +127,7 @@ def main():
 
     try:
         tokens = read_tokens(args)
-    except ValueError as exc:
+    except ValueError, exc:
         parser.error(str(exc))
 
     for token in tokens:
@@ -143,7 +149,7 @@ def main():
 
             sys.stdout.write(output + "\n")
 
-        except ValueError as exc:
+        except ValueError, exc:
             sys.stderr.write("%s -> ERROR: %s\n" % (token, exc))
             return 1
 
