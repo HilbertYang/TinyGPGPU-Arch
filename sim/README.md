@@ -13,6 +13,7 @@ This directory contains the simulation-related content for the project. The main
   - `tb_reg/`: parameter register tests
 - `script/`
   - `CLeanlog.py`: removes noisy warning lines from ISim logs
+  - `bf16_convert.py`: converts BF16 hex values to decimal and decimal values to BF16 hex
   - `original_log.txt`: sample input log used by the script
 
 ## Main Testbench Groups
@@ -108,6 +109,9 @@ Classifier weights and bias data:
 - `tb_gpu_top.v` and `tb_ECG.v` both contain useful task wrappers and are good references when writing new testbenches.
 - `tb_ECG.v` and `tb_gpu_top.v` both include `$dumpfile(...)` and `$dumpvars(...)`, so they can generate waveform files directly for debugging.
 - `script/CLeanlog.py` expects `original_log.txt` in the current working directory, so running it from `sim/script/` is the simplest option.
+- `script/bf16_convert.py` can be used from the repository root, for example:
+  `python sim/script/bf16_convert.py --to-dec 40ea c0d9`
+  `python sim/script/bf16_convert.py --to-bf16 7.3125 -6.78125`
 
 ## Suggested Reading Order
 
